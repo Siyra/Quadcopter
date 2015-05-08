@@ -1,3 +1,9 @@
+//
+// PID.H
+//
+// This file contains the PID control for the UAV.
+//
+
 #ifndef pid
 #define pid
 
@@ -21,8 +27,7 @@ class PID {
 	
 	public:
 	PID();
-	PID(float Kp, float Ki, float Kd);
-	float UpdatePID(float setpoint, float input, float dt);
+	float updatePID(float setpoint, float input, float dt);
 	void setK(float Kp, float Ki, float Kd);
 	void setBounds(float min, float max);
 	

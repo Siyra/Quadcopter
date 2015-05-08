@@ -1,18 +1,9 @@
+//
+// QUADCOPTER.CPP
+//
+// This is the main source file of the project and contains the main loop of the program.
+//
 #include "quadcopter.h"
-
-#define MY_PRIORITY (49) /* we use 49 as the PRREMPT_RT use 50
-                            as the priority of kernel tasklets
-                            and interrupt handler by default */
-
-#define MAX_SAFE_STACK (8*1024) /* The maximum stack size which is
-                                   guaranteed safe to access without
-                                   faulting */
-
-#define NSEC_PER_SEC    (1000000000) /* The number of nsecs per sec. */
-
-#define YAW 0
-#define PITCH 1
-#define ROLL 2
 
 void stack_prefault(void) {
 
@@ -28,9 +19,9 @@ int main(int argc, char* argv[])
         struct sched_param param;
         //int interval = 500000; // 500us = 2000 Hz
         int interval = 500000000; // 500ms = 2 Hz
+		int dt = interval / 1000000000;
 
-        // Declare ourself as a real time task
-
+        // Declare this as a real time task
         param.sched_priority = MY_PRIORITY;
         if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
                 perror("sched_setscheduler failed");
@@ -48,7 +39,7 @@ int main(int argc, char* argv[])
 		
 		//
 		// Initialize the sensors
-		/*
+		//
 		
 		RTIMUSettings imusettings = RTIMUSettings("RTIMULib");
 		
@@ -74,21 +65,29 @@ int main(int argc, char* argv[])
 		if (pressure != NULL)
 			pressure->pressureInit();
 		
-		*/
-		
 		//
 		// Initialize ESCs
 		//
+		printf("Initializing ESCs..\n");
+		ESC motors;
 		
+		motors.init();
 		
 		//
 		// Initialize PID Controllers
 		//
+		printf("Initializing PID Controllers..\n");
 		float PIDOutput[3];
+		float setpoint[3];
+		float attitude[3];
+		float gyro[3];
+		float throttle = 0;
 		
 		PID YPRStab[3];
 		PID YPRRate[3];
 		
+		// The yaw is only controlled using the rate controller, pich
+		// and roll are also controlled using the angle.
 		YPRStab[PITCH].setK(1,0,0);
 		YPRStab[ROLL].setK(1,0,0);
 		
@@ -107,13 +106,49 @@ int main(int argc, char* argv[])
 			clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 
 			// Read user input
+			setpoint[YAW] = 0;
+			setpoint[PITCH] = 0;
+			setpoint[ROLL] = 0;
+			
 			
 			// Read sensor data
+			imu->IMURead();
+			RTIMU_DATA imuData = imu->getIMUData();
 			
-			// Get PID control
+			if (pressure != NULL)
+                pressure->pressureRead(imuData);
+			
+			// Print the IMU data
+			printf("Fusion pose: %s\n", RTMath::displayDegrees("", imuData.fusionPose));
+			printf("Pressure: %4.1f, height above sea level: %4.1f, temperature: %4.1f\n",
+                           imuData.pressure, RTMath::convertPressureToHeight(imuData.pressure), imuData.temperature);
+			
+			// This is the attitude angle of the UAV, so yaw, pitch and roll
+			attitude[0] = imuData.fusionPose.z();
+			attitude[1] = imuData.fusionPose.x();
+			attitude[2] = imuData.fusionPose.y();
+			
+			// These are the angular accelerations of the UAV
+			gyro[0] = imuData.gyro.z();
+			gyro[1] = imuData.gyro.x();
+			gyro[2] = imuData.gyro.y();
+			
+			// Greet the world
 			printf("Hello World! %d \n", t);
-
+			
+			// First the stability control for pitch and roll
+			for(int i=1; i<3; i++) {
+				PIDOutput[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
+			}
+			PIDOutput[0] = attitude[0];
+			
+			// Now the rate control for yaw, pitch and roll
+			for(int i=0; i<3; i++) {
+				PIDOutput[i] = YPRRate[i].updatePID(PIDOutput[i], gyro[i], dt);
+			}
+			
 			// Output to motors
+			motors.update(throttle, PIDOutput);
 			
 			// Calculate next shot
 			t.tv_nsec += interval;

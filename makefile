@@ -81,6 +81,7 @@ DEPS    = $(RTIMULIBPATH)/RTMath.h \
     $(RTIMULIBPATH)/IMUDrivers/RTPressureMS5637.h 
 
 OBJECTS = objects/quadcopter.o \
+	objects/esc.o \
 	objects/pid.o \
     objects/RTMath.o \
     objects/RTIMUHal.o \
@@ -133,24 +134,10 @@ $(OBJECTS_DIR)pid.o : pid.cpp $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
 	$(CXX) -c -o $@ pid.cpp $(CFLAGS) $(INCPATH)
 	
+$(OBJECTS_DIR)esc.o : esc.cpp $(DEPS)
+	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
+	$(CXX) -c -o $@ esc.cpp $(CFLAGS) $(INCPATH)
+	
 $(OBJECTS_DIR)quadcopter.o : quadcopter.cpp $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
 	$(CXX) -c -o $@ quadcopter.cpp $(CFLAGS) $(INCPATH)
-
-# Install
-
-install_target: FORCE
-	@$(CHK_DIR_EXISTS) $(INSTALL_ROOT)/usr/local/bin/ || $(MKDIR) $(INSTALL_ROOT)/usr/local/bin/
-	-$(INSTALL_PROGRAM) "Output/$(MAKE_TARGET)" "$(INSTALL_ROOT)/usr/local/bin/$(MAKE_TARGET)"
-	-$(STRIP) "$(INSTALL_ROOT)/usr/local/bin/$(MAKE_TARGET)"
-
-uninstall_target:  FORCE
-	-$(DEL_FILE) "$(INSTALL_ROOT)/usr/local/bin/$(MAKE_TARGET)"
-
-
-install:  install_target  FORCE
-
-uninstall: uninstall_target   FORCE
-
-FORCE:
-
