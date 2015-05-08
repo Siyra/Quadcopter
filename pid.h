@@ -21,9 +21,10 @@ class PID {
 	
 	public:
 	PID();
-	PID(float,float,float);
+	PID(float Kp, float Ki, float Kd);
 	float UpdatePID(float setpoint, float input, float dt);
-	void setK(float, float, float);
+	void setK(float Kp, float Ki, float Kd);
+	void setBounds(float min, float max);
 	
 	float setpoint;
 };

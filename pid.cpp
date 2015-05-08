@@ -42,7 +42,7 @@ float PID::UpdatePID(float setpoint, float input, float dt) {
 	
 	mDdtErr = -mKd / dt * (input - mLastInput);
 	
-	mOutput = mKp * mErr + MsumErr + mDdtErr;
+	mOutput = mKp * mErr + mSumErr + mDdtErr;
 	
 	if(mOutput > mOutputMax) {
 		mSumErr = 0;
@@ -58,7 +58,7 @@ float PID::UpdatePID(float setpoint, float input, float dt) {
 //
 // Function to set Kp, Ki and Kd
 //
-float PID::setK(float Kp, float Ki, float Kd) {
+void PID::setK(float Kp, float Ki, float Kd) {
 	mKp = Kp;
 	mKi = Ki;
 	mKd = Kd;
@@ -67,7 +67,7 @@ float PID::setK(float Kp, float Ki, float Kd) {
 //
 // Function to set the boundaries of the output
 //
-float PID::setBounds(float min, float max) {
+void PID::setBounds(float min, float max) {
 	mOutputMin = min;
 	mOutputMax = max;
 }
