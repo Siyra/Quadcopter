@@ -47,12 +47,14 @@ void ESC::init() {
 // Update the ESC values with trottle, pitch, roll and yaw values
 //
 void ESC::update(float throttle, float PIDOutput[3]) {
+    int scale = 100;
+    
 	// Set the correct values for each motor, this is assuming the UAV
 	// flies in a + orientation, this can be altered so the UAV flies in a X orientation.
-	EscVals[0] = (throttle + PIDOutput[PITCH] - PIDOutput[YAW]);
-	EscVals[1] = (throttle + PIDOutput[ROLL] + PIDOutput[YAW]);
-	EscVals[2] = (throttle - PIDOutput[PITCH] - PIDOutput[YAW]);
-	EscVals[3] = (throttle - PIDOutput[ROLL] + PIDOutput[YAW]);
+	EscVals[0] = (throttle + PIDOutput[PITCH] - PIDOutput[YAW]) / scale;
+	EscVals[1] = (throttle + PIDOutput[ROLL] + PIDOutput[YAW]) / scale;
+	EscVals[2] = (throttle - PIDOutput[PITCH] - PIDOutput[YAW]) / scale;
+	EscVals[3] = (throttle - PIDOutput[ROLL] + PIDOutput[YAW]) / scale;
 	
 	for(int i=0; i<4; i++) {
 		if(EscVals[i] > 1)
@@ -61,7 +63,7 @@ void ESC::update(float throttle, float PIDOutput[3]) {
 			EscVals[i] = 0;
 	}
 	
-	//printf("%6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
+	printf("PID: %6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
 	//flush();
 }
 

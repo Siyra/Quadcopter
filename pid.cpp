@@ -18,10 +18,10 @@ PID::PID() {
 	mSumErr = 0;
 	mDtErr = 0;
 	mLastInput = 0;
-	mOutputMin = -20;
+	mOutputMin = -100;
 	// Temporary max so the quadcopter does not kill itself, probably
 	// using a max value of 100 later
-	mOutputMax = 20;
+	mOutputMax = 100;
 }
 
 //
@@ -56,7 +56,7 @@ float PID::updatePID(float setpoint, float input, float dt) {
 	//printf("Error: %6.4f, Output: %6.4f\n", mErr, mOutput);
 	
 	// Scale the output so it can be used for the ESC (ESC wants it between 0 and 1)
-	mOutput = mOutput / 10;
+	//mOutput = mOutput / 100;
 	
 	return mOutput;
 }

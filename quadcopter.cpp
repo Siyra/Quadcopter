@@ -5,7 +5,6 @@
 //
 #include "quadcopter.h"
 
-#define TEST
 
 void stack_prefault(void) {
 
@@ -19,9 +18,11 @@ int main(int argc, char* argv[])
 {
         struct timespec t;
         struct sched_param param;
-        //int interval = 500000; // 500us = 2000 Hz
-        int interval = 500000000; // 50ms = 20 Hz
-		float dt = 0.5;
+        //int interval = 10000000; // 10ms = 100 Hz
+        int interval = 50000000; // 50ms = 20 Hz
+		float dt = 0.05;
+        // Initial starting height
+        float h0 = 44000;
 		
 		bool started = true;
 
@@ -75,6 +76,22 @@ int main(int argc, char* argv[])
 		//  Set up pressure sensor
 		if (pressure != NULL)
 			pressure->pressureInit();
+        
+        // Read sensor data
+        imu->IMURead();
+        RTIMU_DATA imuData = imu->getIMUData();
+        
+        if (pressure != NULL)
+            pressure->pressureRead(imuData);
+        
+        printf("Calibrating barometer for height measurement..\n");
+        while(h0 > 100) {
+            if (pressure != NULL)
+                pressure->pressureRead(imuData);
+            
+            h0 = RTMath::convertPressureToHeight(imuData.pressure);
+            usleep(500000);
+        }
 #endif /* TEST */
 			
 		//
@@ -93,7 +110,12 @@ int main(int argc, char* argv[])
 		float setpoint[3];
 		float attitude[3];
 		float gyro[3];
-		float throttle = 0;
+		float throttle = 10;
+        float zAccCorr, zReal;
+        float kVz = -0.01;
+        float kHEst = -0.008;
+        float zVelEst = 0;
+        float hEst = 0;
 		
 		setpoint[0] = 0;
 		setpoint[1] = 0;
@@ -108,12 +130,12 @@ int main(int argc, char* argv[])
 		
 		// The yaw is only controlled using the rate controller, pitch
 		// and roll are also controlled using the angle.
-		YPRStab[PITCH].setK(1,1,0.2);
-		YPRStab[ROLL].setK(1,1,0.2);
+		YPRStab[PITCH].setK(3,0.035,0.04);
+		YPRStab[ROLL].setK(3,0.035,0.04);
 		
-		YPRRate[YAW].setK(1,0,0);
-		YPRRate[PITCH].setK(1,1,0.2);
-		YPRRate[ROLL].setK(1,1,0.2);
+		YPRRate[YAW].setK(3,0.1,0.1);
+		YPRRate[PITCH].setK(3,0.1,0.1);
+		YPRRate[ROLL].setK(3,0.1,0.1);
 		
 		
         clock_gettime(CLOCK_MONOTONIC, &t);
@@ -198,32 +220,45 @@ int main(int argc, char* argv[])
 #ifndef TEST	
 			// Read sensor data
 			imu->IMURead();
-			RTIMU_DATA imuData = imu->getIMUData();
+			imuData = imu->getIMUData();
 			
 			if (pressure != NULL)
                 pressure->pressureRead(imuData);
 			
 			// Print the IMU data
-			printf("Fusion pose: %s\n", RTMath::displayDegrees("", imuData.fusionPose));
-			printf("Pressure: %4.1f, height above sea level: %4.1f, temperature: %4.1f\n",
-                           imuData.pressure, RTMath::convertPressureToHeight(imuData.pressure), imuData.temperature);
+			//printf("Fusion pose: %s\n", RTMath::displayDegrees("", imuData.fusionPose));
+			//printf("Pressure: %4.1f, height above sea level: %4.1f, temperature: %4.1f\n",
+            //               imuData.pressure, RTMath::convertPressureToHeight(imuData.pressure), imuData.temperature);
 			
-			// This is the attitude angle of the UAV, so yaw, pitch and roll
+			// This is the attitude angle of the UAV, so yaw, pitch and roll (in degrees)
 			attitude[YAW] = imuData.fusionPose.z();
-			attitude[PITCH] = imuData.fusionPose.x();
-			attitude[ROLL] = imuData.fusionPose.y();
+			attitude[PITCH] = imuData.fusionPose.y();
+			attitude[ROLL] = imuData.fusionPose.x();
 			
-			// These are the angular accelerations of the UAV
+			// These are the angular accelerations of the UAV (in rad/s)
 			gyro[YAW] = imuData.gyro.z();
-			gyro[PITCH] = imuData.gyro.x();
-			gyro[ROLL] = imuData.gyro.y();
+			gyro[PITCH] = imuData.gyro.y();
+			gyro[ROLL] = imuData.gyro.x();
+            
+            // To get accurate altitude readings, first the acceleration in z-direction needs to be
+            // known.
+            zAccCorr = sqrt(1 - pow(sqrt(pow(sin(attitude[ROLL]),2) + pow(sin(attitude[PITCH]),2)),2));
+            zReal = imuData.accel.z() / zAccCorr;
+            
+            zVelEst = zVelEst + (zReal - 1) * dt;
+            hEst = hEst + zVelEst * dt;
+            
+            zVelEst = zVelEst + kVz * (hEst - (h0 - RTMath::convertPressureToHeight(imuData.pressure)));
+            hEst = hEst + kHEst * (hEst - (h0 - RTMath::convertPressureToHeight(imuData.pressure)));
+            
+            //printf("Filtered height: %6.4f, Filtered velocity: %6.4f\n", hEst, zVelEst);
 			
 			if(started) {
 				// Lets try get the acceleration residuals (without the gravity vector) and integrate these twice
 				// to get the position.
-				accel = imuData.getAccelResiduals();
-				velocity += (accel*dt);
-				position += (velocity*dt);
+				//accel = imuData.fusionPose.getAccelResiduals();
+				//velocity += (accel*dt);
+				//position += (velocity*dt);
 			}
 			
 			// The position data needs to be fused with GPS / lidar to correct for the poor estimate
@@ -248,15 +283,13 @@ int main(int argc, char* argv[])
 				for(int i=1; i<3; i++) {
 					PIDOutput[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
 				}
-				PIDOutput[0] = attitude[0];
+				PIDOutput[0] = setpoint[0];
 				
 				// Now the rate control for yaw, pitch and roll
 				for(int i=0; i<3; i++) {
 					PIDOutput[i] = YPRRate[i].updatePID(PIDOutput[i], gyro[i], dt);
 				}
-				
-				//printf("%lld.%.9ld\n", (long long)t.tv_sec, t.tv_nsec);
-				
+                //printf("PIDOutput: %6.4f, %6.4f, %6.4f\n", PIDOutput[0], PIDOutput[1], PIDOutput[2]);
 				// Output to motors
 				motors.update(throttle, PIDOutput);
 			}
