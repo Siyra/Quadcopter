@@ -40,7 +40,7 @@ float PID::updatePID(float setpoint, float input, float dt) {
 		mSumErr = mOutputMin;
 	
 	// Calculate the derivative part
-	mDtErr = -mKd / dt * (input - mLastInput);
+	mDtErr = -(mKd / dt) * (input - mLastInput);
 	
 	// Sum all parts together to get the output
 	mOutput = mKp * mErr + mSumErr + mDtErr;
@@ -52,6 +52,8 @@ float PID::updatePID(float setpoint, float input, float dt) {
 	} else if(mOutput < mOutputMin) {
 		mOutput = mOutputMin;
 	}
+    
+    mLastInput = input;
 	
 	//printf("Error: %6.4f, Output: %6.4f\n", mErr, mOutput);
 	
