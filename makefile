@@ -25,15 +25,16 @@
 
 RTIMULIBPATH  = RTIMULib
 MAVLINKLIBPATH = MAVLink
+ARMADILLOPATH = armadillo
 
 CC    			= gcc
 CXX   			= g++
 DEFINES       	=
-CFLAGS			= -pipe -O2 -Wall -W $(DEFINES) -lrt
-CXXFLAGS      	= -pipe -O2 -Wall -W $(DEFINES) -lrt
-INCPATH       	= -I. -I$(RTIMULIBPATH) -I$(MAVLINKLIBPATH)
+CFLAGS			= -pipe -O2 -Wall -W $(DEFINES) -lrt -DARMA_DONT_USE_WRAPPER -lblas -llapack
+CXXFLAGS      	= -pipe -O2 -Wall -W $(DEFINES) -lrt -DARMA_DONT_USE_WRAPPER -lblas -llapack
+INCPATH       	= -I. -I$(RTIMULIBPATH) -I$(MAVLINKLIBPATH) -I$(ARMADILLOPATH)
 LINK  			= g++
-LFLAGS			= -Wl,-O1 -lrt
+LFLAGS			= -Wl,-O1 -lrt -DARMA_DONT_USE_WRAPPER -lblas -llapack
 LIBS  			= -L/usr/lib/arm-linux-gnueabihf
 COPY  			= cp -f
 COPY_FILE     	= $(COPY)
@@ -82,6 +83,7 @@ DEPS    = $(RTIMULIBPATH)/RTMath.h \
     $(RTIMULIBPATH)/IMUDrivers/RTPressureMS5637.h 
 
 OBJECTS = objects/quadcopter.o \
+	objects/filter.o \
 	objects/esc.o \
 	objects/pid.o \
 	objects/comms.o \
@@ -132,18 +134,6 @@ $(OBJECTS_DIR)%.o : $(RTIMULIBPATH)/IMUDrivers/%.cpp $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
 	$(CXX) -c -o $@ $< $(CFLAGS) $(INCPATH)
 
-$(OBJECTS_DIR)comms.o : comms.cpp $(DEPS)
+$(OBJECTS_DIR)%.o : %.cpp $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
-	$(CXX) -c -o $@ comms.cpp $(CFLAGS) $(INCPATH)
-	
-$(OBJECTS_DIR)pid.o : pid.cpp $(DEPS)
-	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
-	$(CXX) -c -o $@ pid.cpp $(CFLAGS) $(INCPATH)
-	
-$(OBJECTS_DIR)esc.o : esc.cpp $(DEPS)
-	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
-	$(CXX) -c -o $@ esc.cpp $(CFLAGS) $(INCPATH)
-	
-$(OBJECTS_DIR)quadcopter.o : quadcopter.cpp $(DEPS)
-	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
-	$(CXX) -c -o $@ quadcopter.cpp $(CFLAGS) $(INCPATH)
+	$(CXX) -c -o $@ $< $(CFLAGS) $(INCPATH)

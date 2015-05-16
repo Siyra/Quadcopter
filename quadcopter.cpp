@@ -93,6 +93,8 @@ int main(int argc, char* argv[])
             usleep(500000);
         }
 #endif /* TEST */
+
+		filter positionFilter(h0);
 			
 		//
 		// Initialize ESCs
@@ -111,19 +113,10 @@ int main(int argc, char* argv[])
 		float attitude[3];
 		float gyro[3];
 		float throttle = 10;
-        float zAccCorr, zReal;
-        float kVz = -0.01;
-        float kHEst = -0.008;
-        float zVelEst = 0;
-        float hEst = 0;
 		
 		setpoint[0] = 0;
 		setpoint[1] = 0;
 		setpoint[2] = 0;
-		
-		RTVector3 accel, prevAccel;
-		RTVector3 velocity, prevVelocity;
-		RTVector3 position, prevPosition;
 		
 		PID YPRStab[3];
 		PID YPRRate[3];
@@ -136,7 +129,6 @@ int main(int argc, char* argv[])
 		YPRRate[YAW].setK(3,0.1,0.1);
 		YPRRate[PITCH].setK(3,0.1,0.1);
 		YPRRate[ROLL].setK(3,0.1,0.1);
-		
 		
         clock_gettime(CLOCK_MONOTONIC, &t);
 		
@@ -235,45 +227,25 @@ int main(int argc, char* argv[])
 			attitude[PITCH] = imuData.fusionPose.y();
 			attitude[ROLL] = imuData.fusionPose.x();
 			
-			// These are the angular accelerations of the UAV (in rad/s)
+			// These are the angular velocities of the UAV (in rad/s)
 			gyro[YAW] = imuData.gyro.z();
 			gyro[PITCH] = imuData.gyro.y();
 			gyro[ROLL] = imuData.gyro.x();
-            
-            // To get accurate altitude readings, first the acceleration in z-direction needs to be
-            // known.
-            zAccCorr = sqrt(1 - pow(sqrt(pow(sin(attitude[ROLL]),2) + pow(sin(attitude[PITCH]),2)),2));
-            zReal = imuData.accel.z() / zAccCorr;
-            
-            zVelEst = zVelEst + (zReal - 1) * dt;
-            hEst = hEst + zVelEst * dt;
-            
-            zVelEst = zVelEst + kVz * (hEst - (h0 - RTMath::convertPressureToHeight(imuData.pressure)));
-            hEst = hEst + kHEst * (hEst - (h0 - RTMath::convertPressureToHeight(imuData.pressure)));
-            
-            //printf("Filtered height: %6.4f, Filtered velocity: %6.4f\n", hEst, zVelEst);
 			
-			if(started) {
-				// Lets try get the acceleration residuals (without the gravity vector) and integrate these twice
-				// to get the position.
-				//accel = imuData.fusionPose.getAccelResiduals();
-				//velocity += (accel*dt);
-				//position += (velocity*dt);
-			}
-			
-			// The position data needs to be fused with GPS / lidar to correct for the poor estimate
-			// integrating twice gives
 #else
 			// This is the attitude angle of the UAV, so yaw, pitch and roll
 			attitude[YAW] = 0;
 			attitude[PITCH] = 0;
 			attitude[ROLL] = 0;
 			
-			// These are the angular accelerations of the UAV
+			// These are the angular velocities of the UAV
 			gyro[YAW] = 0;
 			gyro[PITCH] = 0;
 			gyro[ROLL] = 0;
 #endif /* TEST */
+
+			// Here the unscented kalman filter is invoked with the current measurement data
+
 
 			MAVLink.sendStatus(attitude, gyro);
 			
