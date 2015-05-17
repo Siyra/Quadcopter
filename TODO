@@ -1,0 +1,4 @@
+Use conventional header definitions, like _PID_H_
+Use RAII for ESC and COMM classes, initialization in constructor and close code in destructor
+Inconsistent indenting
+Style: https://google-styleguide.googlecode.com/svn/trunk/cppguide.html
