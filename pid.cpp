@@ -16,9 +16,9 @@ PID::PID() {
 	
 	mErr = 0;
 	mSumErr = 0;
-	mDdtErr = 0;
+	mDtErr = 0;
 	mLastInput = 0;
-	mOutputMin = 0;
+	mOutputMin = -20;
 	// Temporary max so the quadcopter does not kill itself, probably
 	// using a max value of 100 later
 	mOutputMax = 20;
@@ -32,26 +32,31 @@ float PID::updatePID(float setpoint, float input, float dt) {
 	mErr = setpoint - input;
 	
 	// Calculate the integral part
-	mSumErr = mErr * mKi * dt;
+	mSumErr += mErr * mKi * dt;
+	
+	if(mSumErr > mOutputMax)
+		mSumErr = mOutputMax;
+	else if(mSumErr < mOutputMin)
+		mSumErr = mOutputMin;
 	
 	// Calculate the derivative part
-	mDdtErr = -mKd / dt * (input - mLastInput);
+	mDtErr = -mKd / dt * (input - mLastInput);
 	
 	// Sum all parts together to get the output
-	mOutput = mKp * mErr + mSumErr + mDdtErr;
+	mOutput = mKp * mErr + mSumErr + mDtErr;
 	
 	// Make sure the calculated value is not out of bounds, mSumErr is also
 	// reset to make sure the controller doesn't go crazy
 	if(mOutput > mOutputMax) {
-		mSumErr = 0;
 		mOutput = mOutputMax;
 	} else if(mOutput < mOutputMin) {
-		mSumErr = 0;
 		mOutput = mOutputMin;
 	}
 	
+	//printf("Error: %6.4f, Output: %6.4f\n", mErr, mOutput);
+	
 	// Scale the output so it can be used for the ESC (ESC wants it between 0 and 1)
-	mOutput = mOutput / 100;
+	mOutput = mOutput / 10;
 	
 	return mOutput;
 }
@@ -71,4 +76,12 @@ void PID::setK(float Kp, float Ki, float Kd) {
 void PID::setBounds(float min, float max) {
 	mOutputMin = min;
 	mOutputMax = max;
+	
+	if(mOutput > mOutputMax) {
+		mSumErr = 0;
+		mOutput = mOutputMax;
+	} else if(mOutput < mOutputMin) {
+		mSumErr = 0;
+		mOutput = mOutputMin;
+	}
 }

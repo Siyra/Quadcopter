@@ -54,7 +54,15 @@ void ESC::update(float throttle, float PIDOutput[3]) {
 	EscVals[2] = (throttle - PIDOutput[PITCH] - PIDOutput[YAW]);
 	EscVals[3] = (throttle - PIDOutput[ROLL] + PIDOutput[YAW]);
 	
-	flush();
+	for(int i=0; i<4; i++) {
+		if(EscVals[i] > 1)
+			EscVals[i] = 1;
+		else if(EscVals[i] < 0)
+			EscVals[i] = 0;
+	}
+	
+	//printf("%6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
+	//flush();
 }
 
 //

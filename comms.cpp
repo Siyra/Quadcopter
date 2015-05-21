@@ -13,6 +13,9 @@ Comms::Comms() {
 
 }
 
+//
+// Initialization function for the communications channel
+//
 void Comms::init(std::string targetIP) {
 	// Set the IP address of mission control
 	mTargetIP = targetIP;
@@ -45,20 +48,30 @@ void Comms::init(std::string targetIP) {
 	mGcAddr.sin_port = htons(14550);
 }
 
+//
+// Send the mandatory heartbeat to the ground station every x seconds
+//
 void Comms::sendHeartbeat() {
 	mavlink_msg_heartbeat_pack(1, 200, &mMsg, MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_GENERIC, MAV_MODE_GUIDED_ARMED, 0, MAV_STATE_ACTIVE);
 	
 	mLen = mavlink_msg_to_send_buffer(mBuf, &mMsg);
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr *) &mGcAddr, sizeof(struct sockaddr_in));
+	
+	memset(mBuf, 0, BUFFER_LENGTH);
 }
 
+//
+// Function to send status and attitude updates to the ground station
+//
 void Comms::sendStatus() {
-	mPos[0] = 1;
-	mPos[1] = 2;
-	mPos[2] = 3;
-	mPos[3] = 4;
-	mPos[4] = 5;
-	mPos[5] = 6;
+	float pos[6];
+
+	pos[0] = 1;
+	pos[1] = 2;
+	pos[2] = 3;
+	pos[3] = 4;
+	pos[4] = 5;
+	pos[5] = 6;
 
 	// Sending the status
 	mavlink_msg_sys_status_pack(1, 200, &mMsg, 0, 0, 0, 500, 11000, -1, -1, 0, 0, 0, 0, 0, 0);
@@ -67,8 +80,8 @@ void Comms::sendStatus() {
 	
 	// Sending the position
 	mavlink_msg_local_position_ned_pack(1, 200, &mMsg, microsSinceEpoch(), 
-									mPos[0], mPos[1], mPos[2],
-									mPos[3], mPos[4], mPos[5]);
+									pos[0], pos[1], pos[2],
+									pos[3], pos[4], pos[5]);
 	mLen = mavlink_msg_to_send_buffer(mBuf, &mMsg);
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr*)&mGcAddr, sizeof(struct sockaddr_in));
 	
@@ -76,8 +89,46 @@ void Comms::sendStatus() {
 	mavlink_msg_attitude_pack(1, 200, &mMsg, microsSinceEpoch(), 1.2, 1.7, 3.14, 0.01, 0.02, 0.03);
 	mLen = mavlink_msg_to_send_buffer(mBuf, &mMsg);
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr*)&mGcAddr, sizeof(struct sockaddr_in));
+	
+	memset(mBuf, 0, BUFFER_LENGTH);
 }
 
+//
+// Function that checks if there is any data send to the quadcopter from the ground station
+//
+void Comms::receiveData() {
+	memset(mBuf, 0, BUFFER_LENGTH);
+	mRecSize = recvfrom(mSocket, (void *) mBuf, BUFFER_LENGTH, 0, (struct sockaddr *) &mGcAddr, &mFromLen);
+	
+	unsigned int temp = 0;
+	
+	if(mRecSize > 0) {
+		printf("Bytes received: %d\nDatagram: ", (int)mRecSize);
+		
+		for(int i = 0; i<mRecSize; i++) {
+			temp = mBuf[i];
+			printf("%02x ", (unsigned char)temp);
+			
+			if(mavlink_parse_char(MAVLINK_COMM_0, mBuf[i], &mMsg, &mStatus) && mMsg.msgid != 0) {
+				printf("Received packet: SYS: %d, COMP: %d, LEN: %d, MSG ID: %d\n", mMsg.sysid, mMsg.compid, mMsg.len, mMsg.msgid);
+			}
+		}
+		printf("\n");
+	}
+	memset(mBuf, 0, BUFFER_LENGTH);
+}
+
+//
+// Close the connection
+//
+void Comms::stop() {
+	memset(mBuf, 0, BUFFER_LENGTH);
+	close(mSocket);
+}
+
+//
+// Convenience function to get the number of microseconds since epoch
+//
 uint64_t Comms::microsSinceEpoch() {
 	
 	struct timespec time;

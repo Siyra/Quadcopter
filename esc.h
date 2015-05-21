@@ -9,8 +9,8 @@
 // 0 and (including) 1. 
 //
 
-#ifndef esc
-#define esc
+#ifndef esc_h
+#define esc_h
 
 #include <iostream>
 #include <stdlib.h>

@@ -24,13 +24,14 @@
 # Compiler, tools and options
 
 RTIMULIBPATH  = RTIMULib
+MAVLINKLIBPATH = MAVLink
 
 CC    			= gcc
 CXX   			= g++
 DEFINES       	=
 CFLAGS			= -pipe -O2 -Wall -W $(DEFINES) -lrt
 CXXFLAGS      	= -pipe -O2 -Wall -W $(DEFINES) -lrt
-INCPATH       	= -I. -I$(RTIMULIBPATH)
+INCPATH       	= -I. -I$(RTIMULIBPATH) -I$(MAVLINKLIBPATH)
 LINK  			= g++
 LFLAGS			= -Wl,-O1 -lrt
 LIBS  			= -L/usr/lib/arm-linux-gnueabihf
@@ -83,6 +84,7 @@ DEPS    = $(RTIMULIBPATH)/RTMath.h \
 OBJECTS = objects/quadcopter.o \
 	objects/esc.o \
 	objects/pid.o \
+	objects/comms.o \
     objects/RTMath.o \
     objects/RTIMUHal.o \
     objects/RTFusion.o \
@@ -130,6 +132,10 @@ $(OBJECTS_DIR)%.o : $(RTIMULIBPATH)/IMUDrivers/%.cpp $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
 	$(CXX) -c -o $@ $< $(CFLAGS) $(INCPATH)
 
+$(OBJECTS_DIR)comms.o : comms.cpp $(DEPS)
+	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
+	$(CXX) -c -o $@ comms.cpp $(CFLAGS) $(INCPATH)
+	
 $(OBJECTS_DIR)pid.o : pid.cpp $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
 	$(CXX) -c -o $@ pid.cpp $(CFLAGS) $(INCPATH)

@@ -27,8 +27,11 @@ class Comms {
 	struct sockaddr_in mGcAddr; 
 	struct sockaddr_in mLocAddr;
 	
-	float mPos[6];
+	ssize_t mRecSize;
+	socklen_t mFromLen;
+
 	mavlink_message_t mMsg;
+	mavlink_status_t mStatus;
 	uint16_t mLen;
 	uint8_t mBuf[BUFFER_LENGTH];
 	int mBytesSent;
@@ -42,6 +45,8 @@ class Comms {
 	void init(std::string targetIP);
 	void sendHeartbeat();
 	void sendStatus();
+	void receiveData();
+	void stop();
 	
 	uint64_t microsSinceEpoch();
 };

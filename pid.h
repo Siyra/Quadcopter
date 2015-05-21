@@ -4,8 +4,8 @@
 // This file contains the PID control for the UAV.
 //
 
-#ifndef pid
-#define pid
+#ifndef pidcontrol_h
+#define pidcontrol_h
 
 #include <iostream>
 #include <stdlib.h>
@@ -19,7 +19,7 @@ class PID {
 	
 	float mErr;
 	float mSumErr;
-	float mDdtErr;
+	float mDtErr;
 	float mLastInput;
 	float mOutputMin;
 	float mOutputMax;
