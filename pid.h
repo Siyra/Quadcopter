@@ -10,6 +10,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include <fstream>
+#include <string.h>
+#include <sstream>
 
 class PID {
 	private:
@@ -30,6 +32,7 @@ class PID {
 	float updatePID(float setpoint, float input, float dt);
 	void setK(float Kp, float Ki, float Kd);
 	void setBounds(float min, float max);
+	void reset();
 	
 	float setpoint;
 };

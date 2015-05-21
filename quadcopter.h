@@ -39,4 +39,11 @@
 #define PITCH 1
 #define ROLL 2
 
+#define START 1
+#define STOP 2
+#define SETPOINT 3
+#define SETPID_YAW 10
+#define SETPID_PR_STAB 11
+#define SETPID_PR_RATE 12
+
 #endif
