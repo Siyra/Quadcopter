@@ -10,7 +10,9 @@
 // Default Constructor
 //
 Comms::Comms() {
-
+	mStrMsg = "";
+	memset(mBuf, 0, BUFFER_LENGTH);
+	mMavlinkmsg = false;
 }
 
 //
@@ -63,7 +65,7 @@ void Comms::sendHeartbeat() {
 //
 // Function to send status and attitude updates to the ground station
 //
-void Comms::sendStatus() {
+void Comms::sendStatus(float attitude[3], float gyro[3]) {
 	float pos[6];
 
 	pos[0] = 1;
@@ -86,7 +88,7 @@ void Comms::sendStatus() {
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr*)&mGcAddr, sizeof(struct sockaddr_in));
 	
 	// Sending the attitude
-	mavlink_msg_attitude_pack(1, 200, &mMsg, microsSinceEpoch(), 1.2, 1.7, 3.14, 0.01, 0.02, 0.03);
+	mavlink_msg_attitude_pack(1, 200, &mMsg, microsSinceEpoch(), attitude[YAW], attitude[PITCH], attitude[ROLL], gyro[YAW], gyro[PITCH], gyro[ROLL]);
 	mLen = mavlink_msg_to_send_buffer(mBuf, &mMsg);
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr*)&mGcAddr, sizeof(struct sockaddr_in));
 	
@@ -94,28 +96,127 @@ void Comms::sendStatus() {
 }
 
 //
-// Function that checks if there is any data send to the quadcopter from the ground station
+// Function that checks if there is any data sent to the quadcopter from the ground station
 //
-void Comms::receiveData() {
+int Comms::receiveData() {
 	memset(mBuf, 0, BUFFER_LENGTH);
 	mRecSize = recvfrom(mSocket, (void *) mBuf, BUFFER_LENGTH, 0, (struct sockaddr *) &mGcAddr, &mFromLen);
 	
-	unsigned int temp = 0;
+	//unsigned int temp = 0;
+	mMavlinkmsg = false;
 	
 	if(mRecSize > 0) {
-		printf("Bytes received: %d\nDatagram: ", (int)mRecSize);
+		//printf("Bytes received: %d\nDatagram: ", (int)mRecSize);
 		
 		for(int i = 0; i<mRecSize; i++) {
-			temp = mBuf[i];
-			printf("%02x ", (unsigned char)temp);
+			//temp = mBuf[i];
+			//printf("%02x ", (unsigned char)temp);
 			
 			if(mavlink_parse_char(MAVLINK_COMM_0, mBuf[i], &mMsg, &mStatus) && mMsg.msgid != 0) {
 				printf("Received packet: SYS: %d, COMP: %d, LEN: %d, MSG ID: %d\n", mMsg.sysid, mMsg.compid, mMsg.len, mMsg.msgid);
+				mMavlinkmsg = true;
+				
 			}
 		}
-		printf("\n");
+		//printf("\n");
+		
+		if(!mMavlinkmsg) {
+			//std::string s (reinterpret_cast<char*>(mBuf), sizeof(mBuf));
+			std::string s (reinterpret_cast<char const*>(mBuf));
+			printf("Received string: %s\n",s.c_str());
+			mStrMsg = s;
+		}
 	}
+
+	return getCommand();
+}
+
+void Comms::purge() {
 	memset(mBuf, 0, BUFFER_LENGTH);
+	mStrMsg = "";
+	mMavlinkmsg = false;
+}
+
+int Comms::getCommand() {
+	int type = 0;
+	
+	if(!mMavlinkmsg) {
+		std::istringstream ss(mStrMsg);
+		
+		std::string sub;
+		ss >> sub;
+		
+		do {
+			if(sub == "START") {
+				type = START;
+				break;
+			} else if(sub == "STOP") {
+				type = STOP;
+				break;
+			} else if(sub == "SETPID") {
+				ss >> sub;
+				
+				if(sub == "yaw")
+					type = SETPID_YAW;
+				else if(sub == "pr_stab")
+					type = SETPID_PR_STAB;
+				else if(sub == "pr_rate")
+					type = SETPID_PR_RATE;
+					
+				break;
+			} else if(sub == "SETPOINT") {
+				type = SETPOINT;
+				break;
+			} else { break; }
+		} while(ss);
+	}
+	
+	return type;
+}
+
+void Comms::parsePID(float &kp, float &kd, float &ki) {
+	std::istringstream ss(mStrMsg);
+
+	do {
+		std::string sub;
+		ss >> sub;
+		
+		if(sub == "kp") {
+			ss >> sub;
+			kp = ::atof(sub.c_str());
+		} else if(sub == "kd") {
+			ss >> sub;
+			kd = ::atof(sub.c_str());
+		} else if(sub == "ki") {
+			ss >> sub;
+			ki = ::atof(sub.c_str());
+		}
+	} while (ss);
+	
+	//printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", kp, kd,ki);
+}
+
+void Comms::parseSetpoint(float &throttle, float &yaw, float &pitch, float &roll) {
+	std::istringstream ss(mStrMsg);
+
+	do {
+		std::string sub;
+		ss >> sub;
+		
+		if(sub == "yaw") {
+			ss >> sub;
+			yaw = ::atof(sub.c_str());
+		} else if(sub == "pitch") {
+			ss >> sub;
+			pitch = ::atof(sub.c_str());
+		} else if(sub == "roll") {
+			ss >> sub;
+			roll = ::atof(sub.c_str());
+		} else if(sub == "throttle") {
+			ss >> sub;
+			throttle = ::atof(sub.c_str());
+		}
+	} while (ss);
 }
 
 //

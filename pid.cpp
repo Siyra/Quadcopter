@@ -68,6 +68,7 @@ void PID::setK(float Kp, float Ki, float Kd) {
 	mKp = Kp;
 	mKi = Ki;
 	mKd = Kd;
+	printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", mKp, mKd, mKi);
 }
 
 //
@@ -84,4 +85,11 @@ void PID::setBounds(float min, float max) {
 		mSumErr = 0;
 		mOutput = mOutputMin;
 	}
+}
+
+void PID::reset() {
+	mErr = 0;
+	mSumErr = 0;
+	mDtErr = 0;
+	mLastInput = 0;
 }

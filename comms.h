@@ -17,10 +17,23 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string>
+#include <sstream>
 #include <time.h>
 #include "MAVLink/mavlink.h"
 
 #define BUFFER_LENGTH 2041
+
+#define YAW 0
+#define PITCH 1
+#define ROLL 2
+
+#define START 1
+#define STOP 2
+#define SETPOINT 3
+#define SETPID_YAW 10
+#define SETPID_PR_STAB 11
+#define SETPID_PR_RATE 12
+
 
 class Comms {
 	private:
@@ -35,6 +48,9 @@ class Comms {
 	uint16_t mLen;
 	uint8_t mBuf[BUFFER_LENGTH];
 	int mBytesSent;
+	bool mMavlinkmsg;
+	
+	std::string mStrMsg;
 	
 	std::string mTargetIP;
 	int mSocket;
@@ -44,10 +60,15 @@ class Comms {
 	
 	void init(std::string targetIP);
 	void sendHeartbeat();
-	void sendStatus();
-	void receiveData();
+	void sendStatus(float attitude[3], float gyro[3]);
+	int receiveData();
 	void stop();
 	
+	int getCommand();
+	void parsePID(float &kp, float &kd, float &ki);
+	void parseSetpoint(float &throttle, float &yaw, float &pitch, float &roll);
+	
+	void purge();
 	uint64_t microsSinceEpoch();
 };
 
