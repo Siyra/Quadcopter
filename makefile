@@ -32,7 +32,8 @@ CXX   			= g++
 DEFINES       	=
 CFLAGS			= -pipe -O2 -Wall -W $(DEFINES) -lrt -DARMA_DONT_USE_WRAPPER -lblas -llapack
 CXXFLAGS      	= -pipe -O2 -Wall -W $(DEFINES) -lrt -DARMA_DONT_USE_WRAPPER -lblas -llapack
-INCPATH       	= -I. -I$(RTIMULIBPATH) -I$(MAVLINKLIBPATH) -I$(ARMADILLOPATH)
+#INCPATH       	= -I. -I$(RTIMULIBPATH) -I$(MAVLINKLIBPATH) -I$(ARMADILLOPATH)
+INCPATH       	= -I. -I$(RTIMULIBPATH) -I$(MAVLINKLIBPATH)
 LINK  			= g++
 LFLAGS			= -Wl,-O1 -lrt -DARMA_DONT_USE_WRAPPER -lblas -llapack
 LIBS  			= -L/usr/lib/arm-linux-gnueabihf
@@ -83,7 +84,6 @@ DEPS    = $(RTIMULIBPATH)/RTMath.h \
     $(RTIMULIBPATH)/IMUDrivers/RTPressureMS5637.h 
 
 OBJECTS = objects/quadcopter.o \
-	objects/filter.o \
 	objects/esc.o \
 	objects/pid.o \
 	objects/comms.o \

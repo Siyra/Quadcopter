@@ -88,7 +88,7 @@ void Comms::sendStatus(float attitude[3], float gyro[3]) {
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr*)&mGcAddr, sizeof(struct sockaddr_in));
 	
 	// Sending the attitude
-	mavlink_msg_attitude_pack(1, 200, &mMsg, microsSinceEpoch(), attitude[YAW], attitude[PITCH], attitude[ROLL], gyro[YAW], gyro[PITCH], gyro[ROLL]);
+	mavlink_msg_attitude_pack(1, 200, &mMsg, microsSinceEpoch(), attitude[ROLL], attitude[PITCH], attitude[YAW], gyro[ROLL], gyro[PITCH], gyro[YAW]);
 	mLen = mavlink_msg_to_send_buffer(mBuf, &mMsg);
 	mBytesSent = sendto(mSocket, mBuf, mLen, 0, (struct sockaddr*)&mGcAddr, sizeof(struct sockaddr_in));
 	
@@ -113,7 +113,7 @@ int Comms::receiveData() {
 			//printf("%02x ", (unsigned char)temp);
 			
 			if(mavlink_parse_char(MAVLINK_COMM_0, mBuf[i], &mMsg, &mStatus) && mMsg.msgid != 0) {
-				printf("Received packet: SYS: %d, COMP: %d, LEN: %d, MSG ID: %d\n", mMsg.sysid, mMsg.compid, mMsg.len, mMsg.msgid);
+				//printf("Received packet: SYS: %d, COMP: %d, LEN: %d, MSG ID: %d\n", mMsg.sysid, mMsg.compid, mMsg.len, mMsg.msgid);
 				mMavlinkmsg = true;
 				
 			}
@@ -123,7 +123,7 @@ int Comms::receiveData() {
 		if(!mMavlinkmsg) {
 			//std::string s (reinterpret_cast<char*>(mBuf), sizeof(mBuf));
 			std::string s (reinterpret_cast<char const*>(mBuf));
-			printf("Received string: %s\n",s.c_str());
+			//printf("Received string: %s\n",s.c_str());
 			mStrMsg = s;
 		}
 	}

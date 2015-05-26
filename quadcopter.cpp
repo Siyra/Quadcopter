@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
         // Initial starting height
         float h0 = 44000;
 		
-		bool started = true;
+		bool started = false;
 
         // Declare this as a real time task
         param.sched_priority = MY_PRIORITY;
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 		//
 		printf("Initializing Comms..\n");
 		Comms MAVLink;
-		MAVLink.init("10.70.130.58");
+		MAVLink.init("192.168.178.13");
 		
 		//
 		// Initialize the sensors
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
         }
 #endif /* TEST */
 
-		filter positionFilter(h0);
+		//filter positionFilter(h0);
 			
 		//
 		// Initialize ESCs
@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
 		float setpoint[3];
 		float attitude[3];
 		float gyro[3];
-		float throttle = 10;
+		float throttle = 0;
 		
 		setpoint[0] = 0;
 		setpoint[1] = 0;
@@ -123,13 +123,22 @@ int main(int argc, char* argv[])
 		
 		// The yaw is only controlled using the rate controller, pitch
 		// and roll are also controlled using the angle.
-		YPRStab[PITCH].setK(3,0.035,0.04);
-		YPRStab[ROLL].setK(3,0.035,0.04);
+		/*YPRStab[PITCH].setK(2,0.035,0.04);
+		YPRStab[ROLL].setK(2,0.035,0.04);
 		
-		YPRRate[YAW].setK(3,0.1,0.1);
-		YPRRate[PITCH].setK(3,0.1,0.1);
-		YPRRate[ROLL].setK(3,0.1,0.1);
+		YPRRate[YAW].setK(2,0.1,0.1);
+		YPRRate[PITCH].setK(2,0.1,0.1);
+		YPRRate[ROLL].setK(2,0.1,0.1);
+        */
+        YPRStab[PITCH].setK(0,0,0);
+		YPRStab[ROLL].setK(0,0,0);
 		
+		YPRRate[YAW].setK(0,0,0);
+		YPRRate[PITCH].setK(0,0,0);
+		YPRRate[ROLL].setK(0,0,0);
+		
+        
+        
         clock_gettime(CLOCK_MONOTONIC, &t);
 		
         // Start after one second
@@ -161,6 +170,7 @@ int main(int argc, char* argv[])
 				
 				case STOP:
 					started = false;
+                    motors.close();
 					break;
 					
 				case SETPOINT:
@@ -261,7 +271,7 @@ int main(int argc, char* argv[])
 				for(int i=0; i<3; i++) {
 					PIDOutput[i] = YPRRate[i].updatePID(PIDOutput[i], gyro[i], dt);
 				}
-                //printf("PIDOutput: %6.4f, %6.4f, %6.4f\n", PIDOutput[0], PIDOutput[1], PIDOutput[2]);
+                //printf("PIDOutput: %6.4f, %6.4f, %6.4f, %6.4f\n", throttle, PIDOutput[0], PIDOutput[1], PIDOutput[2]);
 				// Output to motors
 				motors.update(throttle, PIDOutput);
 			}

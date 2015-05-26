@@ -15,10 +15,14 @@
 // Default constructor
 //
 ESC::ESC() {
-	mEscID[0] = 0;
-	mEscID[1] = 1;
-	mEscID[2] = 2;
-	mEscID[3] = 3;
+    // Front left
+	mEscID[0] = 22;
+    // Front right
+	mEscID[1] = 23;
+    // Back right
+	mEscID[2] = 24;
+    // Back left
+	mEscID[3] = 25;
 	
 	PWMOutput = NULL;
 }
@@ -28,7 +32,7 @@ ESC::ESC() {
 //
 void ESC::init() {
 	// Open a connection to the device
-	PWMOutput = fopen("/dev/pi-blaster", "w");
+	PWMOutput = fopen("/dev/pigpio", "w");
 	
 	if(PWMOutput == NULL) {
 		printf("Could not open /dev/pi-blaster for writing.\n");
@@ -37,7 +41,7 @@ void ESC::init() {
 	
 	// Initialize all ESC values to 0, since the UAV should start at rest
 	for(int i=0; i<4; i++) {
-		EscVals[i] = 0;
+		EscVals[i] = 1000;
 	}
 	
 	flush();
@@ -47,24 +51,24 @@ void ESC::init() {
 // Update the ESC values with trottle, pitch, roll and yaw values
 //
 void ESC::update(float throttle, float PIDOutput[3]) {
-    int scale = 100;
+    int scale = 10;
     
 	// Set the correct values for each motor, this is assuming the UAV
 	// flies in a + orientation, this can be altered so the UAV flies in a X orientation.
-	EscVals[0] = (throttle + PIDOutput[PITCH] - PIDOutput[YAW]) / scale;
-	EscVals[1] = (throttle + PIDOutput[ROLL] + PIDOutput[YAW]) / scale;
-	EscVals[2] = (throttle - PIDOutput[PITCH] - PIDOutput[YAW]) / scale;
-	EscVals[3] = (throttle - PIDOutput[ROLL] + PIDOutput[YAW]) / scale;
+	EscVals[0] = 1000 + ((throttle - PIDOutput[ROLL] + PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
+	EscVals[1] = 1000 + ((throttle + PIDOutput[ROLL] + PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
+	EscVals[2] = 1000 + ((throttle + PIDOutput[ROLL] - PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
+	EscVals[3] = 1000 + ((throttle - PIDOutput[ROLL] - PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
 	
 	for(int i=0; i<4; i++) {
-		if(EscVals[i] > 1)
-			EscVals[i] = 1;
-		else if(EscVals[i] < 0)
-			EscVals[i] = 0;
+		if(EscVals[i] > 2000)
+			EscVals[i] = 2000;
+		else if(EscVals[i] < 1000)
+			EscVals[i] = 1000;
 	}
 	
 	printf("PID: %6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
-	//flush();
+	flush();
 }
 
 //
@@ -73,7 +77,8 @@ void ESC::update(float throttle, float PIDOutput[3]) {
 void ESC::flush() {
 	// Write the ESC values to the device
 	for(int i=0; i<4; i++) {
-		fprintf(PWMOutput, "%d=%f\n", mEscID[i], EscVals[i]);
+        //printf("s %d %g", mEscID[i], EscVals[i]);
+		fprintf(PWMOutput, "s %d %g\n", mEscID[i], EscVals[i]);
 		fflush(PWMOutput);
 	}
 }
@@ -84,14 +89,14 @@ void ESC::flush() {
 void ESC::close() {
 	// Set all ESC values to 0
 	for(int i=0; i<4; i++) {
-		EscVals[i] = 0;
+		EscVals[i] = 1000;
 	}
 	
 	// Write the values to the device
 	flush();
 	
 	if(PWMOutput == NULL) {
-		printf("/dev/pi-blaster already closed");
+		printf("/dev/pigpio already closed");
 		return;
 	}
 	

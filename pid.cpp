@@ -18,10 +18,10 @@ PID::PID() {
 	mSumErr = 0;
 	mDtErr = 0;
 	mLastInput = 0;
-	mOutputMin = -100;
+	mOutputMin = -20;
 	// Temporary max so the quadcopter does not kill itself, probably
 	// using a max value of 100 later
-	mOutputMax = 100;
+	mOutputMax = 20;
 }
 
 //
