@@ -26,7 +26,7 @@ class PID {
 	float mOutputMin;
 	float mOutputMax;
 	float mOutput;
-	
+
 	public:
 	PID();
 	float updatePID(float setpoint, float input, float dt);

@@ -33,6 +33,7 @@
 //  The bigger the value, the more sluggish the response.
 
 #define KALMAN_RVALUE	0.0005f
+//#define KALMAN_RVALUE	0.001f
 
 #define KALMAN_QUATERNION_LENGTH	4
 

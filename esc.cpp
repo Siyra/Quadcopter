@@ -11,6 +11,8 @@
 
 #include "esc.h"
 
+extern FILE *file;
+
 //
 // Default constructor
 //
@@ -35,7 +37,7 @@ void ESC::init() {
 	PWMOutput = fopen("/dev/pigpio", "w");
 	
 	if(PWMOutput == NULL) {
-		printf("Could not open /dev/pi-blaster for writing.\n");
+		printf("Could not open /dev/pigpio for writing.\n");
 		exit(2);
 	}
 	
@@ -52,6 +54,8 @@ void ESC::init() {
 //
 void ESC::update(float throttle, float PIDOutput[3]) {
     int scale = 10;
+	
+	PIDOutput[YAW] = 0;
     
 	// Set the correct values for each motor, this is assuming the UAV
 	// flies in a + orientation, this can be altered so the UAV flies in a X orientation.
@@ -67,7 +71,7 @@ void ESC::update(float throttle, float PIDOutput[3]) {
 			EscVals[i] = 1000;
 	}
 	
-	//printf("PID: %6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
+	//fprintf(file, "%6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f\n", PIDOutput[0], PIDOutput[1], PIDOutput[2], EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
 	flush();
 }
 

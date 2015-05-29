@@ -18,10 +18,10 @@ PID::PID() {
 	mSumErr = 0;
 	mDtErr = 0;
 	mLastInput = 0;
-	mOutputMin = -100;
+	mOutputMin = -10;
 	// Temporary max so the quadcopter does not kill itself, probably
 	// using a max value of 100 later
-	mOutputMax = 100;
+	mOutputMax = 10;
 }
 
 //
@@ -69,9 +69,15 @@ float PID::updatePID(float setpoint, float input, float dt) {
 // Function to set Kp, Ki and Kd
 //
 void PID::setK(float Kp, float Ki, float Kd) {
-	mKp = Kp;
-	mKi = Ki;
-	mKd = Kd;
+	if(Kp >= 0)
+		mKp = Kp;
+	
+	if(Ki >= 0)
+		mKi = Ki;
+	
+	if(Kd >= 0)
+		mKd = Kd;
+		
 	printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", mKp, mKd, mKi);
 }
 

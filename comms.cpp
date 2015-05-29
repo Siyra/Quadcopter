@@ -158,9 +158,9 @@ int Comms::getCommand() {
 				
 				if(sub == "yaw")
 					type = SETPID_YAW;
-				else if(sub == "pr_stab")
+				else if(sub == "stab")
 					type = SETPID_PR_STAB;
-				else if(sub == "pr_rate")
+				else if(sub == "rate")
 					type = SETPID_PR_RATE;
 					
 				break;
