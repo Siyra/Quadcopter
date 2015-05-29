@@ -28,9 +28,9 @@ SETPOINT throttle 0 yaw 0 pitch 0 roll 0 - Sets the setpoint values for the quad
 
 SETPID yaw kp 1 kd 1 ki 1 - Sets the PID constants for the yaw controller
 
-SETPID pr_stab kp 1 kd 1 ki 1 - Sets the PID constants for pitch and roll for the stability controller
+SETPID stab kp 1 kd 1 ki 1 - Sets the PID constants for pitch and roll for the stability controller
 
-SETPID pr_rate kp 1 kd 1 ki 1 - Sets the PID constants for pitch and roll for the rate controller
+SETPID rate kp 1 kd 1 ki 1 - Sets the PID constants for pitch and roll for the rate controller
 
 You can also use each parameter seperately, for example:
 
@@ -38,4 +38,4 @@ SETPOINT pitch 0.3
 
 or
 
-SETPID pr_stab kd 1.3
+SETPID stab kd 1.3
