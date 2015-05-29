@@ -16,11 +16,11 @@
 //
 ESC::ESC() {
     // Front left
-	mEscID[0] = 22;
+	mEscID[0] = 24;
     // Front right
 	mEscID[1] = 23;
     // Back right
-	mEscID[2] = 24;
+	mEscID[2] = 22;
     // Back left
 	mEscID[3] = 25;
 	
@@ -55,19 +55,19 @@ void ESC::update(float throttle, float PIDOutput[3]) {
     
 	// Set the correct values for each motor, this is assuming the UAV
 	// flies in a + orientation, this can be altered so the UAV flies in a X orientation.
-	EscVals[0] = 1000 + ((throttle - PIDOutput[ROLL] + PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
-	EscVals[1] = 1000 + ((throttle + PIDOutput[ROLL] + PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
-	EscVals[2] = 1000 + ((throttle + PIDOutput[ROLL] - PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
-	EscVals[3] = 1000 + ((throttle - PIDOutput[ROLL] - PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
+	EscVals[0] = 1000 + ((throttle + PIDOutput[ROLL] + PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
+	EscVals[1] = 1000 + ((throttle - PIDOutput[ROLL] + PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
+	EscVals[2] = 1000 + ((throttle - PIDOutput[ROLL] - PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
+	EscVals[3] = 1000 + ((throttle + PIDOutput[ROLL] - PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
 	
 	for(int i=0; i<4; i++) {
-		if(EscVals[i] > 2000)
-			EscVals[i] = 2000;
+		if(EscVals[i] > 1800)
+			EscVals[i] = 1800;
 		else if(EscVals[i] < 1000)
 			EscVals[i] = 1000;
 	}
 	
-	printf("PID: %6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
+	//printf("PID: %6.4f, %6.4f, %6.4f, %6.4f\n", EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
 	flush();
 }
 

@@ -18,10 +18,10 @@ PID::PID() {
 	mSumErr = 0;
 	mDtErr = 0;
 	mLastInput = 0;
-	mOutputMin = -20;
+	mOutputMin = -100;
 	// Temporary max so the quadcopter does not kill itself, probably
 	// using a max value of 100 later
-	mOutputMax = 20;
+	mOutputMax = 100;
 }
 
 //
@@ -49,8 +49,10 @@ float PID::updatePID(float setpoint, float input, float dt) {
 	// reset to make sure the controller doesn't go crazy
 	if(mOutput > mOutputMax) {
 		mOutput = mOutputMax;
+        mSumErr = 0;
 	} else if(mOutput < mOutputMin) {
 		mOutput = mOutputMin;
+        mSumErr = 0;
 	}
     
     mLastInput = input;

@@ -18,9 +18,9 @@ int main(int argc, char* argv[])
 {
         struct timespec t;
         struct sched_param param;
-        //int interval = 10000000; // 10ms = 100 Hz
-        int interval = 50000000; // 50ms = 20 Hz
-		float dt = 0.05;
+        int interval = 10000000; // 10ms = 100 Hz
+        //int interval = 50000000; // 50ms = 20 Hz
+		float dt = 0.01;
         // Initial starting height
         float h0 = 44000;
 		
@@ -92,6 +92,8 @@ int main(int argc, char* argv[])
             h0 = RTMath::convertPressureToHeight(imuData.pressure);
             usleep(500000);
         }
+        
+        
 #endif /* TEST */
 
 		//filter positionFilter(h0);
@@ -114,30 +116,29 @@ int main(int argc, char* argv[])
 		float gyro[3];
 		float throttle = 0;
 		
-		setpoint[0] = 0;
-		setpoint[1] = 0;
-		setpoint[2] = 0;
+		setpoint[YAW] = imuData.fusionPose.z();
+		setpoint[PITCH] = -imuData.fusionPose.y();
+		setpoint[ROLL] = -imuData.fusionPose.x();
 		
 		PID YPRStab[3];
 		PID YPRRate[3];
 		
 		// The yaw is only controlled using the rate controller, pitch
 		// and roll are also controlled using the angle.
-		/*YPRStab[PITCH].setK(2,0.035,0.04);
-		YPRStab[ROLL].setK(2,0.035,0.04);
+		YPRStab[PITCH].setK(4,0.035,0.01);
+		YPRStab[ROLL].setK(4,0.035,0.01);
 		
-		YPRRate[YAW].setK(2,0.1,0.1);
-		YPRRate[PITCH].setK(2,0.1,0.1);
-		YPRRate[ROLL].setK(2,0.1,0.1);
-        */
-        YPRStab[PITCH].setK(0,0,0);
-		YPRStab[ROLL].setK(0,0,0);
+		//YPRRate[YAW].setK(3,0.1,0.1);
+		YPRRate[PITCH].setK(3,0.1,0.125);
+		YPRRate[ROLL].setK(3,0.1,0.125);
+
+        
+        //YPRStab[PITCH].setK(0,0,0);
+		//YPRStab[ROLL].setK(0,0,0);
 		
 		YPRRate[YAW].setK(0,0,0);
-		YPRRate[PITCH].setK(0,0,0);
-		YPRRate[ROLL].setK(0,0,0);
-		
-        
+		//YPRRate[PITCH].setK(0,0,0);
+		//YPRRate[ROLL].setK(0,0,0);
         
         clock_gettime(CLOCK_MONOTONIC, &t);
 		
@@ -234,13 +235,13 @@ int main(int argc, char* argv[])
 			
 			// This is the attitude angle of the UAV, so yaw, pitch and roll (in degrees)
 			attitude[YAW] = imuData.fusionPose.z();
-			attitude[PITCH] = imuData.fusionPose.y();
-			attitude[ROLL] = imuData.fusionPose.x();
+			attitude[PITCH] = -imuData.fusionPose.y();
+			attitude[ROLL] = -imuData.fusionPose.x();
 			
 			// These are the angular velocities of the UAV (in rad/s)
 			gyro[YAW] = imuData.gyro.z();
-			gyro[PITCH] = imuData.gyro.y();
-			gyro[ROLL] = imuData.gyro.x();
+			gyro[PITCH] = -imuData.gyro.y();
+			gyro[ROLL] = -imuData.gyro.x();
 			
 #else
 			// This is the attitude angle of the UAV, so yaw, pitch and roll

@@ -41,7 +41,7 @@
 
 //  this defines the accelerometer noise level
 
-#define RTIMU_FUZZY_GYRO_ZERO      0.20
+#define RTIMU_FUZZY_GYRO_ZERO      0.40
 
 //  this defines the accelerometer noise level
 
