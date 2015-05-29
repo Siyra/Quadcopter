@@ -16,13 +16,14 @@ int main(int argc, char* argv[])
 {
 	struct timespec t, current_t, last_t;
 	struct sched_param param;
+	//int interval =  2500000; // 2.5ms = 400 Hz
 	int interval = 10000000; // 10ms = 100 Hz
 	//int interval = 50000000; // 50ms = 20 Hz
-	float dt = 0.01;
+	float dt = (float)interval / 1000000000;
 	// Initial starting height
 	float h0 = 44000;
 	
-	bool started = false;
+	bool started = true;
 	bool first = true;
 
 	// Declare this as a real time task
@@ -214,6 +215,8 @@ int main(int argc, char* argv[])
 				(static_cast <int64_t>(last_t.tv_sec) * 1000000000 +
 				static_cast <int64_t>(last_t.tv_nsec))) / 1000000000.0;
 			
+			printf("DT = %6.4f\n", dt);
+			
 			// First the stability control for pitch and roll
 			for(int i=1; i<3; i++) {
 				PIDOutput[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
@@ -236,7 +239,10 @@ int main(int argc, char* argv[])
 	
 			lastHeartbeat = t.tv_sec;
 		}
-
+		
+		float tempkp = -1;
+		float tempkd = -1;
+		float tempki = -1;
 		// The switch that receives controls from the GCS
 		switch(MAVLink.receiveData()) {
 			case START:
@@ -264,9 +270,7 @@ int main(int argc, char* argv[])
 	
 			// Set the PID constants for the yaw control (rate only)
 			case SETPID_YAW:
-				float tempkp = -1;
-				float tempkd = -1;
-				float tempki = -1;
+				
 				MAVLink.parsePID(tempkp,tempkd,tempki);
 				YPRRate[YAW].setK(tempkp,tempkd,tempki);
 		
@@ -275,9 +279,6 @@ int main(int argc, char* argv[])
 	
 			// Set the PID constants for the pitch and roll control (angle only)
 			case SETPID_PR_STAB:
-				float tempkp = -1;
-				float tempkd = -1;
-				float tempki = -1;
 				MAVLink.parsePID(tempkp,tempkd,tempki);
 				YPRStab[PITCH].setK(tempkp,tempkd,tempki);
 				YPRStab[ROLL].setK(tempkp,tempkd,tempki);
@@ -287,9 +288,6 @@ int main(int argc, char* argv[])
 	
 			// Set the PID constants for the pitch and roll control (rate only)
 			case SETPID_PR_RATE:
-				float tempkp = -1;
-				float tempkd = -1;
-				float tempki = -1;
 				MAVLink.parsePID(tempkp,tempkd,tempki);
 				YPRRate[PITCH].setK(tempkp,tempkd,tempki);
 				YPRRate[ROLL].setK(tempkp,tempkd,tempki);
