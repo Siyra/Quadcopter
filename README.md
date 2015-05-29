@@ -7,9 +7,13 @@ the image for this can be downloaded here (there is also image for the Raspberry
 
 http://docs.emlid.com/Downloads/Real-time-Linux-RPi1/
 
-For this to work, you will also need PI-Blaster, which can be downloaded here:
+For this to work, you will also need PIGPIO, which can be downloaded here:
 
-https://github.com/sarfata/pi-blaster
+http://abyz.co.uk/rpi/pigpio/
+
+Also these two libraries are neccesary:
+liblapack-dev
+libblas-dev
 
 ## Ground control
 Using for example QGroundControl you can use the console to send ASCII commands.
