@@ -11,10 +11,11 @@
 #include <math.h>
 #include <iostream>
 #include "RTIMULib/RTIMULib.h"
-#include <armadillo>
+//#include <armadillo>
 
 #define GRAV 9.817
-
+#define BUFFER_SIZE 20
+/*
 using namespace arma;
 
 typedef struct
@@ -30,14 +31,23 @@ typedef struct
 	vec GpsVelocity;
 	float BaroAltitude;
 } MEASUREMENT;
-
+*/
 class filter {
 	public:
-	filter(float h0);
+	filter();
 	
-	void newData(RTIMU_DATA& data, float dt);
+	//void newData(RTIMU_DATA& data, float dt);
+	
+	RTVector3 lowPass(RTVector3 sensorData);
 	
 	protected:
+	// Variables for sensor data smoothing
+	int mIndexBuffer;
+	float mBufferSize;
+	RTVector3 mBuffer[BUFFER_SIZE];
+	RTVector3 mSensorDataSum;
+	
+	/*
 	void calculateMeasuredPos(RTIMU_DATA& data);
 	
 	void predict();
@@ -64,7 +74,7 @@ class filter {
 	
 	// The current state of the system
 	vec mState;
-	// The current measurements of the GPS and barometer
+	// The current measurements of the GPS and barometer and altitudemeter
 	vec mMeasure;
 	
 	// delta time
@@ -72,13 +82,14 @@ class filter {
 	float mH0;
 	
 	mat mKk;                                       // the Kalman gain matrix
-    mat mPkk_1;                                    // the predicted estimated covariance matrix
-    mat mPkk;                                      // the updated estimated covariance matrix
-    mat mPDot;                                     // the derivative of the covariance matrix
-    mat mQ;                                        // process noise covariance
-    mat mFk;                                       // the state transition matrix
-    mat mFkTranspose;                              // the state transition matrix transposed
-    mat mRk;                                       // the measurement noise covariance
+	mat mPkk_1;                                    // the predicted estimated covariance matrix
+	mat mPkk;                                      // the updated estimated covariance matrix
+	mat mPDot;                                     // the derivative of the covariance matrix
+	mat mQ;                                        // process noise covariance
+	mat mFk;                                       // the state transition matrix
+	mat mHk;
+	mat mRk;                                       // the measurement noise covariance
+	*/
 };
 
 #endif /* FILTER_H */

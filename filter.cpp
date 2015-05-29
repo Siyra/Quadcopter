@@ -1,12 +1,33 @@
 //
 // FILTER.CPP
 //
-// This class implements the a filter, now it will only measure position
+// This class implements the Kalman filter, now it will only measure position
 // based on accelerometer data and GPS positioning.
 //
 
 #include "filter.h"
 
+filter::filter() {
+	mBufferSize = 20;
+	mIndexBuffer = 0;
+}
+
+RTVector3 filter::lowPass(RTVector3 sensorData) {
+	mSensorDataSum -= mBuffer[mIndexBuffer];
+	mBuffer[mIndexBuffer] = sensorData;
+	
+	mSensorDataSum += sensorData;
+	mIndexBuffer++;
+	
+	if(mIndexBuffer >= mBufferSize)
+		mIndexBuffer = 0;
+	
+	RTVector3 temp(mSensorDataSum.x() / mBufferSize,mSensorDataSum.y() / mBufferSize,mSensorDataSum.z() / mBufferSize);
+	
+	return temp;
+}
+
+/*
 filter::filter(float h0) {
 	mState.zeros();
 	mMeasure.zeros();
@@ -63,6 +84,10 @@ void filter::newData(RTIMU_DATA& data, float dt) {
 	
 	mOmega(2,0) = mGyro(2);
 	mOmega(2,1) = -mGyro(1);
+	
+	predict();
+	
+	update();
 }
 
 //
@@ -77,6 +102,12 @@ void filter::predict() {
 	// Calculate acceleration first in body
 	vec temp = mAccel - (mOmega * mInVel) - (mTib * gravity);
 	
+	mState(6) = temp(0);
+	mState(7) = temp(1);
+	mState(8) = temp(2);
+	
+	// State vector
+	// [ pos_x pos_y pos_z  vel_x vel_y vel_z  acc_x acc_y acc_z ]
 	mFk << 1.0 << 0 << 0 << mDt << 0 << 0 << 0.5*mDt*mDt << 0 << 0 << endr
 		<< 0 << 1.0 << 0 << 0 << mDt << 0 << 0 << 0.5*mDt*mDt << 0 << endr
 		<< 0 << 0 << 1.0 << 0 << 0 << mDt << 0 << 0 << 0.5*mDt*mDt << endr
@@ -87,12 +118,31 @@ void filter::predict() {
 		<< 0 << 0 << 0 << 0 << 0 << 0 << 0 << 1.0 << 0 << endr
 		<< 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 1.0;
 	
+	// Measurement state vector:
+	// [ GPS_x GPS_y GPS_z  baro_z  sonar_z ]
+	mHk << 1.0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << endr
+		<< 0 << 1.0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << endr
+		<< 0 << 0 << 1.0 << 0 << 0 << 0 << 0 << 0 << 0 << endr
+		<< 0 << 0 << 1.0 << 0 << 0 << 0 << 0 << 0 << 0 << endr
+		<< 0 << 0 << 1.0 << 0 << 0 << 0 << 0 << 0 << 0;
+
+	// Project the state ahead
+	mState = mFk * mState;
 	
-	
-	
+	mPkk_1 = mFk * mPkk * mFk.t() + mQ;
 }
 
 // This function corrects the estimated state with data from GPS and barometer
 void filter::update() {
-
-}
+	mat Sk, SkInverse;
+	
+	Sk = mHk * mPkk_1 * mHk.t() + mR;
+	SkInverse = inv(Sk);
+	
+	mKk = mPkk_1 * mHk.t() * SkInverse;
+	
+	mState = mState + mKk * (mMeasure - mHk * mState);
+	
+	mat ident = eye<mat>(9,9);
+	mPkk = (ident - mKk*mHk) * mPkk_1;
+}*/

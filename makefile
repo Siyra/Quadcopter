@@ -84,6 +84,7 @@ DEPS    = $(RTIMULIBPATH)/RTMath.h \
     $(RTIMULIBPATH)/IMUDrivers/RTPressureMS5637.h 
 
 OBJECTS = objects/quadcopter.o \
+	objects/filter.o \
 	objects/esc.o \
 	objects/pid.o \
 	objects/comms.o \
