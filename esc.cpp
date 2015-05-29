@@ -35,7 +35,7 @@ void ESC::init() {
 	PWMOutput = fopen("/dev/pigpio", "w");
 	
 	if(PWMOutput == NULL) {
-		printf("Could not open /dev/pi-blaster for writing.\n");
+		printf("Could not open /dev/pigpio for writing.\n");
 		exit(2);
 	}
 	
@@ -78,7 +78,7 @@ void ESC::flush() {
 	// Write the ESC values to the device
 	for(int i=0; i<4; i++) {
         //printf("s %d %g", mEscID[i], EscVals[i]);
-		fprintf(PWMOutput, "s %d %g\n", mEscID[i], EscVals[i]);
+		fprintf(PWMOutput, "s %d %g\n", mEscID[i], (int)EscVals[i]);
 		fflush(PWMOutput);
 	}
 }

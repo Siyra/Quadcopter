@@ -67,9 +67,15 @@ float PID::updatePID(float setpoint, float input, float dt) {
 // Function to set Kp, Ki and Kd
 //
 void PID::setK(float Kp, float Ki, float Kd) {
-	mKp = Kp;
-	mKi = Ki;
-	mKd = Kd;
+	if(Kp >= 0)
+		mKp = Kp;
+	
+	if(Ki >= 0)
+		mKi = Ki;
+	
+	if(Kd >= 0)
+		mKd = Kd;
+		
 	printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", mKp, mKd, mKi);
 }
 

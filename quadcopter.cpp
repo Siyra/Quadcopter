@@ -14,15 +14,16 @@ void stack_prefault(void) {
 
 int main(int argc, char* argv[])
 {
-	struct timespec t;
+	struct timespec t, current_t, last_t;
 	struct sched_param param;
-	//int interval = 10000000; // 10ms = 100 Hz
-	int interval = 50000000; // 50ms = 20 Hz
-	float dt = 0.05;
+	int interval = 10000000; // 10ms = 100 Hz
+	//int interval = 50000000; // 50ms = 20 Hz
+	float dt = 0.01;
 	// Initial starting height
 	float h0 = 44000;
 	
 	bool started = false;
+	bool first = true;
 
 	// Declare this as a real time task
 	param.sched_priority = MY_PRIORITY;
@@ -150,77 +151,11 @@ int main(int argc, char* argv[])
 	t.tv_sec++;
 
 	int lastHeartbeat = 0;
-	float tempkp, tempkd, tempki;
 		
 	printf("Starting process loop with dt: %f\n",dt);
         while(1) {
 		// Wait until next shot
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-
-		// Send a heartbeat
-		if((t.tv_sec - lastHeartbeat) > 1) {
-			//printf("Sending heartbeat\n");
-			MAVLink.sendHeartbeat();
-	
-			lastHeartbeat = t.tv_sec;
-		}
-
-		// The switch that receives controls from the GCS
-		switch(MAVLink.receiveData()) {
-			case START:
-				started = true;
-				break;
-	
-			case STOP:
-				started = false;
-				motors.close();
-				break;
-		
-			case SETPOINT:
-				MAVLink.parseSetpoint(throttle, setpoint[0], setpoint[1], setpoint[2]);
-				printf("throttle = %4.2f, yaw = %4.2f, pitch = %4.2f, roll = %4.2f\n", throttle, setpoint[0], setpoint[1],setpoint[2]);
-		
-				for(int i=1; i<3; i++) {
-					YPRStab[i].reset();
-				}
-		
-				for(int i=0; i<3; i++) {
-					YPRRate[i].reset();
-				}
-				break;
-	
-			// Set the PID constants for the yaw control (rate only)
-			case SETPID_YAW:
-				MAVLink.parsePID(tempkp,tempkd,tempki);
-				YPRRate[YAW].setK(tempkp,tempkd,tempki);
-		
-				printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
-				break;
-	
-			// Set the PID constants for the pitch and roll control (angle only)
-			case SETPID_PR_STAB:
-				MAVLink.parsePID(tempkp,tempkd,tempki);
-				YPRStab[PITCH].setK(tempkp,tempkd,tempki);
-				YPRStab[ROLL].setK(tempkp,tempkd,tempki);
-		
-				printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
-				break;
-	
-			// Set the PID constants for the pitch and roll control (rate only)
-			case SETPID_PR_RATE:
-				MAVLink.parsePID(tempkp,tempkd,tempki);
-				YPRRate[PITCH].setK(tempkp,tempkd,tempki);
-				YPRRate[ROLL].setK(tempkp,tempkd,tempki);
-		
-				printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
-				break;
-	
-			default:
-				break;
-		}
-
-		// Clean the buffer so the message does not get repeated
-		MAVLink.purge();
 
 #ifndef TEST	
 		// Read sensor data
@@ -261,11 +196,24 @@ int main(int argc, char* argv[])
 #endif /* TEST */
 
 		// Here the unscented kalman filter is invoked with the current measurement data
-
-
-		MAVLink.sendStatus(attitude, gyro);
+		
 
 		if(started) {
+			if(first) {
+				first = false;
+				clock_gettime(CLOCK_MONOTONIC, &current_t);
+				current_t.tv_nsec -= dt*1000000000;
+			}
+			
+			// Calculate the exact delta time
+			last_t = current_t;
+			
+			clock_gettime(CLOCK_MONOTONIC, &current_t);
+			dt = ((static_cast <int64_t>(current_t.tv_sec) * 1000000000 +
+				static_cast <int64_t>(current_t.tv_nsec)) -
+				(static_cast <int64_t>(last_t.tv_sec) * 1000000000 +
+				static_cast <int64_t>(last_t.tv_nsec))) / 1000000000.0;
+			
 			// First the stability control for pitch and roll
 			for(int i=1; i<3; i++) {
 				PIDOutput[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
@@ -280,6 +228,83 @@ int main(int argc, char* argv[])
 			// Output to motors
 			motors.update(throttle, PIDOutput);
 		}
+		
+		// Send a heartbeat
+		if((t.tv_sec - lastHeartbeat) > 1) {
+			//printf("Sending heartbeat\n");
+			MAVLink.sendHeartbeat();
+	
+			lastHeartbeat = t.tv_sec;
+		}
+
+		// The switch that receives controls from the GCS
+		switch(MAVLink.receiveData()) {
+			case START:
+				started = true;
+				break;
+	
+			case STOP:
+				started = false;
+				first = true;
+				motors.close();
+				break;
+		
+			case SETPOINT:
+				MAVLink.parseSetpoint(throttle, setpoint[0], setpoint[1], setpoint[2]);
+				printf("throttle = %4.2f, yaw = %4.2f, pitch = %4.2f, roll = %4.2f\n", throttle, setpoint[0], setpoint[1],setpoint[2]);
+		
+				for(int i=1; i<3; i++) {
+					YPRStab[i].reset();
+				}
+		
+				for(int i=0; i<3; i++) {
+					YPRRate[i].reset();
+				}
+				break;
+	
+			// Set the PID constants for the yaw control (rate only)
+			case SETPID_YAW:
+				float tempkp = -1;
+				float tempkd = -1;
+				float tempki = -1;
+				MAVLink.parsePID(tempkp,tempkd,tempki);
+				YPRRate[YAW].setK(tempkp,tempkd,tempki);
+		
+				printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
+				break;
+	
+			// Set the PID constants for the pitch and roll control (angle only)
+			case SETPID_PR_STAB:
+				float tempkp = -1;
+				float tempkd = -1;
+				float tempki = -1;
+				MAVLink.parsePID(tempkp,tempkd,tempki);
+				YPRStab[PITCH].setK(tempkp,tempkd,tempki);
+				YPRStab[ROLL].setK(tempkp,tempkd,tempki);
+		
+				printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
+				break;
+	
+			// Set the PID constants for the pitch and roll control (rate only)
+			case SETPID_PR_RATE:
+				float tempkp = -1;
+				float tempkd = -1;
+				float tempki = -1;
+				MAVLink.parsePID(tempkp,tempkd,tempki);
+				YPRRate[PITCH].setK(tempkp,tempkd,tempki);
+				YPRRate[ROLL].setK(tempkp,tempkd,tempki);
+		
+				printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
+				break;
+	
+			default:
+				break;
+		}
+
+		// Clean the buffer so the message does not get repeated
+		MAVLink.purge();
+		
+		MAVLink.sendStatus(attitude, gyro);
 
 		// Calculate next shot
 		t.tv_nsec += interval;
