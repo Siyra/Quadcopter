@@ -32,8 +32,8 @@
 //  The RVALUE controls the influence of the accels and compass.
 //  The bigger the value, the more sluggish the response.
 
-//#define KALMAN_RVALUE	0.0005f
-#define KALMAN_RVALUE	0.005f
+#define KALMAN_RVALUE	0.0005f
+//#define KALMAN_RVALUE	0.005f
 
 #define KALMAN_QUATERNION_LENGTH	4
 
@@ -182,8 +182,7 @@ void RTFusionKalman4::newIMUData(RTIMU_DATA& data, const RTIMUSettings *settings
     else
         m_gyro = RTVector3();
 	
-	m_accel = m_filter.lowPass(data.accel);
-    //m_accel = data.accel;
+    m_accel = data.accel;
     m_compass = data.compass;
     m_compassValid = data.compassValid;
 

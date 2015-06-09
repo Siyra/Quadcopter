@@ -142,6 +142,8 @@ RTIMU::RTIMU(RTIMUSettings *settings)
         break;
     }
     HAL_INFO1("Using fusion algorithm %s\n", RTFusion::fusionName(m_settings->m_fusionType));
+	
+	m_filter.setSize(75);
 }
 
 RTIMU::~RTIMU()
@@ -357,6 +359,8 @@ void RTIMU::calibrateAccel()
 
 void RTIMU::updateFusion()
 {
+	m_imuData.accel = m_filter.lowPass(m_imuData.accel);
+	
     m_fusion->newIMUData(m_imuData, m_settings);
 }
 

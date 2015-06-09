@@ -8,7 +8,7 @@
 #include "filter.h"
 
 filterz::filterz() {
-	mBufferSize = 7;
+	mBufferSize = 50;
 	mIndexBuffer = 0;
 }
 
@@ -25,6 +25,10 @@ RTVector3 filterz::lowPass(RTVector3 sensorData) {
 	RTVector3 temp(mSensorDataSum.x() / mBufferSize,mSensorDataSum.y() / mBufferSize,mSensorDataSum.z() / mBufferSize);
 	
 	return temp;
+}
+
+void filterz::setSize(int size) {
+	mBufferSize = size;
 }
 
 /*

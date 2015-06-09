@@ -10,11 +10,11 @@
 
 #include <math.h>
 #include <iostream>
-#include "RTIMULib/RTIMULib.h"
+#include "RTIMULib/RTMath.h"
 //#include <armadillo>
 
 #define GRAV 9.817
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 100
 /*
 using namespace arma;
 
@@ -39,6 +39,7 @@ class filterz {
 	//void newData(RTIMU_DATA& data, float dt);
 	
 	RTVector3 lowPass(RTVector3 sensorData);
+	void setSize(int size);
 	
 	protected:
 	// Variables for sensor data smoothing

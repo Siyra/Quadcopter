@@ -28,6 +28,7 @@
 #include "../RTFusion.h"
 #include "../RTIMULibDefs.h"
 #include "../RTIMUSettings.h"
+#include "../../filter.h"
 
 //  Axis rotation defs
 //
@@ -166,6 +167,8 @@ protected:
     bool m_compassCalibrationMode;                          // true if cal mode so don't use cal data!
     bool m_accelCalibrationMode;                            // true if cal mode so don't use cal data!
 
+	filterz m_filter;
+	
     RTIMU_DATA m_imuData;                                   // the data from the IMU
 
     RTIMUSettings *m_settings;                              // the settings object pointer

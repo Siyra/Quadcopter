@@ -16,7 +16,8 @@ int main(int argc, char* argv[])
 	struct timespec t, current_t, last_t;
 	struct sched_param param;
 	//int interval =  2500000; // 2.5ms = 400 Hz
-	int interval = 10000000; // 10ms = 100 Hz
+	//int interval = 10000000; // 10ms = 100 Hz
+	int interval = 20000000; // 20ms = 50 Hz
 	//int interval = 50000000; // 50ms = 20 Hz
 	float dt = (float)interval / 1000000000;
 	float cumTime = 0;
@@ -25,7 +26,7 @@ int main(int argc, char* argv[])
 	
 	bool started = false;
 	bool first = true;
-file = fopen("recordedData.dat","w");
+	file = fopen("recordedData.dat","w");
 	// Declare this as a real time task
 	param.sched_priority = MY_PRIORITY;
 	if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
@@ -106,6 +107,7 @@ file = fopen("recordedData.dat","w");
 	
 	// Initialize sensor filters
 	filterz gyroFilter;
+	gyroFilter.setSize(7);
 
 	//
 	// Initialize PID Controllers
@@ -125,7 +127,7 @@ file = fopen("recordedData.dat","w");
 	bias[PITCH] = imuData.fusionPose.y();
 	bias[ROLL] = imuData.fusionPose.x();
 	
-	setpoint[YAW] = bias[YAW];
+	setpoint[YAW] = 0;
 	setpoint[PITCH] = bias[PITCH];
 	setpoint[ROLL] = bias[ROLL];
 
@@ -134,18 +136,17 @@ file = fopen("recordedData.dat","w");
 
 	// The yaw is only controlled using the rate controller, pitch
 	// and roll are also controlled using the angle.
-	YPRStab[PITCH].setK(1.10,0.10,0.03);
-	YPRStab[ROLL].setK(1.10,0.10,0.03);
+	YPRStab[PITCH].setK(1.2,0.15,0.08);
+	YPRStab[ROLL].setK(1.2,0.15,0.08);
 
 	//YPRRate[YAW].setK(3,0.1,0.1);
-	YPRRate[PITCH].setK(14,0,1.1);
-	YPRRate[ROLL].setK(14,0,1.1);
-
+	YPRRate[PITCH].setK(13,0.1,1.1);
+	YPRRate[ROLL].setK(13,0.1,1.1);
 
 	//YPRStab[PITCH].setK(0,0,0);
 	//YPRStab[ROLL].setK(0,0,0);
 
-	YPRRate[YAW].setK(1,0.005,0.01);
+	YPRRate[YAW].setK(16,0,1.1);
 	//YPRRate[PITCH].setK(0,0,0);
 	//YPRRate[ROLL].setK(0,0,0);
 	
@@ -181,7 +182,7 @@ file = fopen("recordedData.dat","w");
 		attitude[ROLL] = imuData.fusionPose.x() - bias[ROLL];
 
 		// These are the angular velocities of the UAV (in rad/s)
-		//RTVector3 gyrotemp = gyroFilter.lowPass(imuData.fusionPose);
+		RTVector3 gyrotemp = gyroFilter.lowPass(imuData.gyro);
 		
 		//attitude[YAW] = gyrotemp.z() - bias[YAW];
 		//attitude[PITCH] = gyrotemp.y() - bias[PITCH];
@@ -189,7 +190,7 @@ file = fopen("recordedData.dat","w");
 		
 		gyro[YAW] = imuData.gyro.z();
 		gyro[PITCH] = imuData.gyro.y();
-		gyro[ROLL] = imuData.gyro.x();
+		gyro[ROLL] =  imuData.gyro.x();
 
 #else
 		// This is the attitude angle of the UAV, so yaw, pitch and roll
@@ -243,7 +244,7 @@ file = fopen("recordedData.dat","w");
 			// Output to motors
 			motors.update(throttle, PIDOutput);
 			
-			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n", cumTime, imuData.gyro.z(), imuData.gyro.y(), imuData.gyro.x(), imuData.accel.z(), imuData.accel.y(), imuData.accel.x(), imuData.fusionPose.z(), imuData.fusionPose.y(), imuData.fusionPose.x());
+			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f \n", cumTime, PIDOutput[0], PIDOutput[1], PIDOutput[2], imuData.fusionPose.z(), imuData.fusionPose.y(), imuData.fusionPose.x());
 			cumTime += dt;
 		}
 		
