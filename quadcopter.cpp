@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
 	int interval = 10000000; // 10ms = 100 Hz
 	//int interval = 50000000; // 50ms = 20 Hz
 	float dt = (float)interval / 1000000000;
+	float cumTime = 0;
 	// Initial starting height
 	float h0 = 44000;
 	
@@ -104,7 +105,7 @@ file = fopen("recordedData.dat","w");
 	motors.init();
 	
 	// Initialize sensor filters
-	filter gyroFilter;
+	filterz gyroFilter;
 
 	//
 	// Initialize PID Controllers
@@ -133,18 +134,18 @@ file = fopen("recordedData.dat","w");
 
 	// The yaw is only controlled using the rate controller, pitch
 	// and roll are also controlled using the angle.
-	YPRStab[PITCH].setK(3.2,0.04,0.035);
-	YPRStab[ROLL].setK(3.2,0.04,0.035);
+	YPRStab[PITCH].setK(1.10,0.10,0.03);
+	YPRStab[ROLL].setK(1.10,0.10,0.03);
 
 	//YPRRate[YAW].setK(3,0.1,0.1);
-	YPRRate[PITCH].setK(1.8,0.05,0.225);
-	YPRRate[ROLL].setK(1.8,0.05,0.225);
+	YPRRate[PITCH].setK(14,0,1.1);
+	YPRRate[ROLL].setK(14,0,1.1);
 
 
 	//YPRStab[PITCH].setK(0,0,0);
 	//YPRStab[ROLL].setK(0,0,0);
 
-	YPRRate[YAW].setK(0,0,0);
+	YPRRate[YAW].setK(1,0.005,0.01);
 	//YPRRate[PITCH].setK(0,0,0);
 	//YPRRate[ROLL].setK(0,0,0);
 	
@@ -180,7 +181,12 @@ file = fopen("recordedData.dat","w");
 		attitude[ROLL] = imuData.fusionPose.x() - bias[ROLL];
 
 		// These are the angular velocities of the UAV (in rad/s)
-		//RTVector3 gyrotemp = gyroFilter.lowPass(imuData.gyro);
+		//RTVector3 gyrotemp = gyroFilter.lowPass(imuData.fusionPose);
+		
+		//attitude[YAW] = gyrotemp.z() - bias[YAW];
+		//attitude[PITCH] = gyrotemp.y() - bias[PITCH];
+		//attitude[ROLL] = gyrotemp.x() - bias[ROLL];
+		
 		gyro[YAW] = imuData.gyro.z();
 		gyro[PITCH] = imuData.gyro.y();
 		gyro[ROLL] = imuData.gyro.x();
@@ -218,17 +224,14 @@ file = fopen("recordedData.dat","w");
 				(static_cast <int64_t>(last_t.tv_sec) * 1000000000 +
 				static_cast <int64_t>(last_t.tv_nsec))) / 1000000000.0;
 			
+			
 			//printf("DT = %6.4f\n", dt);
 			
 			// First the stability control for pitch and roll
 			for(int i=1; i<3; i++) {
-				//PIDOutput1[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
+				PIDOutput1[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
 			}
-			//PIDOutput1[0] = setpoint[0];
-			
-			PIDOutput1[0] = 0;
-			PIDOutput1[1] = 0;
-			PIDOutput1[2] = 0;
+			PIDOutput1[0] = setpoint[0];
 			
 			//fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n", PIDOutput[0], PIDOutput[1], PIDOutput[2], gyro[0], gyro[1], gyro[2]);
 	
@@ -240,7 +243,8 @@ file = fopen("recordedData.dat","w");
 			// Output to motors
 			motors.update(throttle, PIDOutput);
 			
-			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n", gyro[0], gyro[1], gyro[2], attitude[0], attitude[1], attitude[2], PIDOutput1[0], PIDOutput1[1], PIDOutput1[2], PIDOutput[0], PIDOutput[1], PIDOutput[2]);
+			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n", cumTime, imuData.gyro.z(), imuData.gyro.y(), imuData.gyro.x(), imuData.accel.z(), imuData.accel.y(), imuData.accel.x(), imuData.fusionPose.z(), imuData.fusionPose.y(), imuData.fusionPose.x());
+			cumTime += dt;
 		}
 		
 		// Send a heartbeat
@@ -287,7 +291,7 @@ file = fopen("recordedData.dat","w");
 					MAVLink.parsePID(tempkp,tempkd,tempki);
 					YPRRate[YAW].setK(tempkp,tempkd,tempki);
 			
-					printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
+					//printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
 					break;
 		
 				// Set the PID constants for the pitch and roll control (angle only)
@@ -296,7 +300,7 @@ file = fopen("recordedData.dat","w");
 					YPRStab[PITCH].setK(tempkp,tempkd,tempki);
 					YPRStab[ROLL].setK(tempkp,tempkd,tempki);
 			
-					printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
+					//printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
 					break;
 		
 				// Set the PID constants for the pitch and roll control (rate only)
@@ -305,7 +309,7 @@ file = fopen("recordedData.dat","w");
 					YPRRate[PITCH].setK(tempkp,tempkd,tempki);
 					YPRRate[ROLL].setK(tempkp,tempkd,tempki);
 			
-					printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
+					//printf("Kp = %4.2f, Kd = %4.2f, Ki = %4.2f\n", tempkp, tempkd,tempki);
 					break;
 		
 				default:

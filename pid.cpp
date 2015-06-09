@@ -18,10 +18,10 @@ PID::PID() {
 	mSumErr = 0;
 	mDtErr = 0;
 	mLastInput = 0;
-	mOutputMin = -10;
+	mOutputMin = -400;
 	// Temporary max so the quadcopter does not kill itself, probably
 	// using a max value of 100 later
-	mOutputMax = 10;
+	mOutputMax = 400;
 }
 
 //
@@ -40,7 +40,7 @@ float PID::updatePID(float setpoint, float input, float dt) {
 		mSumErr = mOutputMin;
 	
 	// Calculate the derivative part
-	mDtErr = -(mKd / dt) * (input - mLastInput);
+	mDtErr = -mKd / dt * (input - mLastInput);
 	
 	// Sum all parts together to get the output
 	mOutput = mKp * mErr + mSumErr + mDtErr;

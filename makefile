@@ -57,7 +57,8 @@ OBJECTS_DIR   = objects/
 
 # Files
 
-DEPS    = $(RTIMULIBPATH)/RTMath.h \
+DEPS    = filter.h\
+	$(RTIMULIBPATH)/RTMath.h \
     $(RTIMULIBPATH)/RTIMULib.h \
     $(RTIMULIBPATH)/RTIMULibDefs.h \
     $(RTIMULIBPATH)/RTIMUHal.h \

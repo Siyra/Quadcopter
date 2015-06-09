@@ -32,9 +32,9 @@ typedef struct
 	float BaroAltitude;
 } MEASUREMENT;
 */
-class filter {
+class filterz {
 	public:
-	filter();
+	filterz();
 	
 	//void newData(RTIMU_DATA& data, float dt);
 	

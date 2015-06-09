@@ -26,6 +26,7 @@
 #define	_RTFUSIONKALMAN4_H
 
 #include "RTFusion.h"
+#include "filter.h"
 
 class RTFusionKalman4 : public RTFusion
 {
@@ -55,6 +56,7 @@ private:
     void predict();
     void update();
 
+	filterz m_filter;
     RTVector3 m_gyro;										// unbiased gyro data
     RTFLOAT m_timeDelta;                                    // time between predictions
 

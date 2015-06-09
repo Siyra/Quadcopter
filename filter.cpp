@@ -7,12 +7,12 @@
 
 #include "filter.h"
 
-filter::filter() {
-	mBufferSize = 20;
+filterz::filterz() {
+	mBufferSize = 7;
 	mIndexBuffer = 0;
 }
 
-RTVector3 filter::lowPass(RTVector3 sensorData) {
+RTVector3 filterz::lowPass(RTVector3 sensorData) {
 	mSensorDataSum -= mBuffer[mIndexBuffer];
 	mBuffer[mIndexBuffer] = sensorData;
 	

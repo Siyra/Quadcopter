@@ -53,25 +53,24 @@ void ESC::init() {
 // Update the ESC values with trottle, pitch, roll and yaw values
 //
 void ESC::update(float throttle, float PIDOutput[3]) {
-    int scale = 10;
-	
+	throttle = throttle * 10;
+
 	PIDOutput[YAW] = 0;
-    
 	// Set the correct values for each motor, this is assuming the UAV
 	// flies in a + orientation, this can be altered so the UAV flies in a X orientation.
-	EscVals[0] = 1000 + ((throttle + PIDOutput[ROLL] + PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
-	EscVals[1] = 1000 + ((throttle - PIDOutput[ROLL] + PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
-	EscVals[2] = 1000 + ((throttle - PIDOutput[ROLL] - PIDOutput[PITCH] - PIDOutput[YAW]) * scale);
-	EscVals[3] = 1000 + ((throttle + PIDOutput[ROLL] - PIDOutput[PITCH] + PIDOutput[YAW]) * scale);
+	EscVals[0] = 1000 + (throttle + PIDOutput[ROLL] + PIDOutput[PITCH] - PIDOutput[YAW]);
+	EscVals[1] = 1000 + (throttle - PIDOutput[ROLL] + PIDOutput[PITCH] + PIDOutput[YAW]);
+	EscVals[2] = 1000 + (throttle - PIDOutput[ROLL] - PIDOutput[PITCH] - PIDOutput[YAW]);
+	EscVals[3] = 1000 + (throttle + PIDOutput[ROLL] - PIDOutput[PITCH] + PIDOutput[YAW]);
 	
 	for(int i=0; i<4; i++) {
-		if(EscVals[i] > 1800)
-			EscVals[i] = 1800;
+		if(EscVals[i] > 2000)
+			EscVals[i] = 2000;
 		else if(EscVals[i] < 1000)
 			EscVals[i] = 1000;
 	}
 	
-	//fprintf(file, "%6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f\n", PIDOutput[0], PIDOutput[1], PIDOutput[2], EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
+	//printf("%6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f, %6.4f\n", PIDOutput[0], PIDOutput[1], PIDOutput[2], EscVals[0], EscVals[1], EscVals[2], EscVals[3]);
 	flush();
 }
 
