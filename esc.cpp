@@ -18,13 +18,13 @@ extern FILE *file;
 //
 ESC::ESC() {
     // Front left
-	mEscID[0] = 24;
+	mEscID[0] = 23;
     // Front right
-	mEscID[1] = 23;
+	mEscID[1] = 22;
     // Back right
-	mEscID[2] = 22;
+	mEscID[2] = 25;
     // Back left
-	mEscID[3] = 25;
+	mEscID[3] = 24;
 	
 	PWMOutput = NULL;
 }
@@ -53,7 +53,6 @@ void ESC::init() {
 // Update the ESC values with trottle, pitch, roll and yaw values
 //
 void ESC::update(float throttle, float PIDOutput[3]) {
-	throttle = throttle * 10;
 
 	PIDOutput[YAW] = 0;
 	// Set the correct values for each motor, this is assuming the UAV

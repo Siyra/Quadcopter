@@ -359,7 +359,7 @@ void RTIMU::calibrateAccel()
 
 void RTIMU::updateFusion()
 {
-	m_imuData.accel = m_filter.lowPass(m_imuData.accel);
+	//m_imuData.accel = m_filter.lowPass(m_imuData.accel);
 	
     m_fusion->newIMUData(m_imuData, m_settings);
 }

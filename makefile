@@ -83,7 +83,8 @@ DEPS    = $(RTIMULIBPATH)/RTMath.h \
     $(RTIMULIBPATH)/IMUDrivers/RTPressureMS5611.h \
     $(RTIMULIBPATH)/IMUDrivers/RTPressureMS5637.h 
 
-OBJECTS = objects/quadcopter.o \
+OBJECTS = objects/joystick.o \
+	objects/quadcopter.o \
 	objects/filter.o \
 	objects/esc.o \
 	objects/pid.o \
@@ -132,6 +133,10 @@ $(OBJECTS_DIR)%.o : $(RTIMULIBPATH)/%.cpp $(DEPS)
 	$(CXX) -c -o $@ $< $(CFLAGS) $(INCPATH)
 	
 $(OBJECTS_DIR)%.o : $(RTIMULIBPATH)/IMUDrivers/%.cpp $(DEPS)
+	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
+	$(CXX) -c -o $@ $< $(CFLAGS) $(INCPATH)
+	
+$(OBJECTS_DIR)%.o : %.cc $(DEPS)
 	@$(CHK_DIR_EXISTS) objects/ || $(MKDIR) objects/
 	$(CXX) -c -o $@ $< $(CFLAGS) $(INCPATH)
 

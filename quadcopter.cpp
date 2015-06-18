@@ -16,8 +16,8 @@ int main(int argc, char* argv[])
 	struct timespec t, current_t, last_t;
 	struct sched_param param;
 	//int interval =  2500000; // 2.5ms = 400 Hz
-	//int interval = 10000000; // 10ms = 100 Hz
-	int interval = 20000000; // 20ms = 50 Hz
+	int interval = 5000000; // 5ms = 200 Hz
+	//int interval = 20000000; // 20ms = 50 Hz
 	//int interval = 50000000; // 50ms = 20 Hz
 	float dt = (float)interval / 1000000000;
 	float cumTime = 0;
@@ -106,9 +106,15 @@ int main(int argc, char* argv[])
 	motors.init();
 	
 	// Initialize sensor filters
-	filterz gyroFilter;
-	gyroFilter.setSize(7);
-
+	filterz gyroFilter, attiFilter;
+	gyroFilter.setSize(4);
+	attiFilter.setSize(4);
+	
+	//
+	// Initialize PS3 Controller
+	//
+	Joystick joystick("/dev/input/js0");
+	
 	//
 	// Initialize PID Controllers
 	//
@@ -136,12 +142,12 @@ int main(int argc, char* argv[])
 
 	// The yaw is only controlled using the rate controller, pitch
 	// and roll are also controlled using the angle.
-	YPRStab[PITCH].setK(1.2,0.15,0.08);
-	YPRStab[ROLL].setK(1.2,0.15,0.08);
+	YPRStab[PITCH].setK(2.5,0.2,0.1);
+	YPRStab[ROLL].setK(2.5,0.2,0.1);
 
 	//YPRRate[YAW].setK(3,0.1,0.1);
-	YPRRate[PITCH].setK(13,0.1,1.1);
-	YPRRate[ROLL].setK(13,0.1,1.1);
+	YPRRate[PITCH].setK(16,0.8,1.1);
+	YPRRate[ROLL].setK(16,0.8,1.1);
 
 	//YPRStab[PITCH].setK(0,0,0);
 	//YPRStab[ROLL].setK(0,0,0);
@@ -177,20 +183,25 @@ int main(int argc, char* argv[])
 		//               imuData.pressure, RTMath::convertPressureToHeight(imuData.pressure), imuData.temperature);
 
 		// This is the attitude angle of the UAV, so yaw, pitch and roll (in degrees)
-		attitude[YAW] = imuData.fusionPose.z() - bias[YAW];
-		attitude[PITCH] = imuData.fusionPose.y() - bias[PITCH];
-		attitude[ROLL] = imuData.fusionPose.x() - bias[ROLL];
+		//attitude[YAW] = imuData.fusionPose.z() - bias[YAW];
+		//attitude[PITCH] = imuData.fusionPose.y() - bias[PITCH];
+		//attitude[ROLL] = imuData.fusionPose.x() - bias[ROLL];
 
 		// These are the angular velocities of the UAV (in rad/s)
 		RTVector3 gyrotemp = gyroFilter.lowPass(imuData.gyro);
+		RTVector3 attitemp = attiFilter.lowPass(imuData.fusionPose);
 		
-		//attitude[YAW] = gyrotemp.z() - bias[YAW];
-		//attitude[PITCH] = gyrotemp.y() - bias[PITCH];
-		//attitude[ROLL] = gyrotemp.x() - bias[ROLL];
+		attitude[YAW] = attitemp.z() - bias[YAW];
+		attitude[PITCH] = attitemp.y() - bias[PITCH];
+		attitude[ROLL] = attitemp.x() - bias[ROLL];
 		
-		gyro[YAW] = imuData.gyro.z();
-		gyro[PITCH] = imuData.gyro.y();
-		gyro[ROLL] =  imuData.gyro.x();
+		//gyro[YAW] = imuData.gyro.z();
+		//gyro[PITCH] = imuData.gyro.y();
+		//gyro[ROLL] =  imuData.gyro.x();
+		
+		gyro[YAW] = gyrotemp.z();
+		gyro[PITCH] = gyrotemp.y();
+		gyro[ROLL] =  gyrotemp.x();
 
 #else
 		// This is the attitude angle of the UAV, so yaw, pitch and roll
@@ -206,8 +217,21 @@ int main(int argc, char* argv[])
 		gyro[ROLL] = gyrotemp.x();
 #endif /* TEST */
 
-		// Here the unscented kalman filter is invoked with the current measurement data
-		
+		// Here the joystick data is processed
+		JoystickEvent event;
+		if (joystick.sample(&event)) {
+			if (event.isAxis() && event.number == 13) {
+				throttle = (event.value + 32767) / 100;
+				//printf("Set throttle to %g\n", throttle);
+			} else if (event.isAxis() && event.number == 3) {
+				setpoint[PITCH] = (float)event.value / 32767.0;
+				//printf("Set pitch to %6.4f\n", setpoint[PITCH]);
+			} else if (event.isAxis() && event.number == 2) {
+				setpoint[ROLL] = (float)event.value / 32767.0;
+				//printf("Set roll to %6.4f\n", setpoint[ROLL]);
+			}
+		}
+			
 
 		if(started) {
 			if(first) {
@@ -244,7 +268,7 @@ int main(int argc, char* argv[])
 			// Output to motors
 			motors.update(throttle, PIDOutput);
 			
-			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f \n", cumTime, PIDOutput[0], PIDOutput[1], PIDOutput[2], imuData.fusionPose.z(), imuData.fusionPose.y(), imuData.fusionPose.x());
+			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f \n", cumTime, PIDOutput[0], PIDOutput[1], PIDOutput[2], attitude[0], attitude[1], attitude[2]);
 			cumTime += dt;
 		}
 		
@@ -257,6 +281,7 @@ int main(int argc, char* argv[])
 		}
 		
 		if((t.tv_nsec - lastDataSent) >= 100000000) {
+			
 			lastDataSent = t.tv_nsec;
 			float tempkp = -1;
 			float tempkd = -1;

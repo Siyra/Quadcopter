@@ -17,6 +17,7 @@
 #include <time.h>
 #include <sched.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 // The library for reading sensor data
 #include "RTIMULib/RTIMULib.h"
@@ -24,6 +25,7 @@
 #include "esc.h"
 #include "comms.h"
 #include "filter.h"
+#include "joystick.hh"
 
 // We use 49 as the PRREMPT_RT use 50 as the priority of kernel tasklets
 // and interrupt handler by default
