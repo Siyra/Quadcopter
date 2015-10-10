@@ -82,8 +82,8 @@ public:
     RTVector3();
     RTVector3(RTFLOAT x, RTFLOAT y, RTFLOAT z);
 
-    const RTVector3&  operator +=(RTVector3& vec);
-    const RTVector3&  operator -=(RTVector3& vec);
+    RTVector3&  operator +=(RTVector3& vec);
+    RTVector3&  operator -=(RTVector3& vec);
 
     RTVector3& operator =(const RTVector3& vec);
 
@@ -115,6 +115,15 @@ private:
     RTFLOAT m_data[3];
 };
 
+inline RTVector3 operator *(float lhs, const RTVector3& rhs)
+{
+	return RTVector3(rhs.x() * lhs, rhs.y() * lhs, rhs.z() * lhs);
+}
+
+inline RTVector3 operator +(const RTVector3& lhs, const RTVector3& rhs)
+{
+	return RTVector3(lhs.x() + rhs.x(), lhs.y() + rhs.y(), lhs.z() + rhs.z());
+}
 
 class RTQuaternion
 {

@@ -143,7 +143,8 @@ RTIMU::RTIMU(RTIMUSettings *settings)
     }
     HAL_INFO1("Using fusion algorithm %s\n", RTFusion::fusionName(m_settings->m_fusionType));
 	
-	m_filter.setSize(75);
+	m_filter.setSize(100);
+	m_filter2.setSize(500);
 }
 
 RTIMU::~RTIMU()
@@ -359,7 +360,19 @@ void RTIMU::calibrateAccel()
 
 void RTIMU::updateFusion()
 {
+	// const static float alpha = 0.1;
+	// static RTVector3 prev_accel = m_imuData.accel;
+	// const static float alpha2 = 0.2;
+	// static RTVector3 prev_gyro = m_imuData.gyro;
+	
+	// m_imuData.accel = (1-alpha) * prev_accel + alpha * m_imuData.accel;
+	// prev_accel = m_imuData.accel;
+	
+	// m_imuData.gyro = (1-alpha2) * prev_gyro + alpha2 * m_imuData.gyro;
+	// prev_gyro = m_imuData.gyro;
+	
 	//m_imuData.accel = m_filter.lowPass(m_imuData.accel);
+	//m_imuData.gyro = m_filter2.lowPass(m_imuData.gyro);
 	
     m_fusion->newIMUData(m_imuData, m_settings);
 }

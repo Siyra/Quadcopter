@@ -53,8 +53,6 @@ void ESC::init() {
 // Update the ESC values with trottle, pitch, roll and yaw values
 //
 void ESC::update(float throttle, float PIDOutput[3]) {
-
-	PIDOutput[YAW] = 0;
 	// Set the correct values for each motor, this is assuming the UAV
 	// flies in a + orientation, this can be altered so the UAV flies in a X orientation.
 	EscVals[0] = 1000 + (throttle + PIDOutput[ROLL] + PIDOutput[PITCH] - PIDOutput[YAW]);

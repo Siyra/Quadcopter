@@ -28,12 +28,13 @@
 //  The QVALUE affects the gyro response.
 
 #define KALMAN_QVALUE	0.001f
+// #define KALMAN_QVALUE	0.0001f
 
 //  The RVALUE controls the influence of the accels and compass.
 //  The bigger the value, the more sluggish the response.
 
 #define KALMAN_RVALUE	0.0005f
-//#define KALMAN_RVALUE	0.005f
+// #define KALMAN_RVALUE	0.002f
 
 #define KALMAN_QUATERNION_LENGTH	4
 

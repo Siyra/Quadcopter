@@ -172,14 +172,15 @@ RTVector3& RTVector3::operator =(const RTVector3& vec)
 }
 
 
-const RTVector3& RTVector3::operator +=(RTVector3& vec)
+RTVector3& RTVector3::operator +=(RTVector3& vec)
 {
     for (int i = 0; i < 3; i++)
         m_data[i] += vec.m_data[i];
     return *this;
 }
 
-const RTVector3& RTVector3::operator -=(RTVector3& vec)
+
+RTVector3& RTVector3::operator -=(RTVector3& vec)
 {
     for (int i = 0; i < 3; i++)
         m_data[i] -= vec.m_data[i];

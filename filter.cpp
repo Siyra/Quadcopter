@@ -10,21 +10,35 @@
 filterz::filterz() {
 	mBufferSize = 50;
 	mIndexBuffer = 0;
+	mSensorDataSum = RTVector3(0,0,0);
 }
 
 RTVector3 filterz::lowPass(RTVector3 sensorData) {
-	mSensorDataSum -= mBuffer[mIndexBuffer];
-	mBuffer[mIndexBuffer] = sensorData;
+	// mSensorDataSum -= mBuffer[mIndexBuffer];
+	// mBuffer[mIndexBuffer] = sensorData;
 	
-	mSensorDataSum += sensorData;
-	mIndexBuffer++;
+	// mSensorDataSum += sensorData;
+	// mIndexBuffer++;
 	
-	if(mIndexBuffer >= mBufferSize)
-		mIndexBuffer = 0;
+	// if(mIndexBuffer >= mBufferSize)
+		// mIndexBuffer = 0;
 	
-	RTVector3 temp(mSensorDataSum.x() / mBufferSize,mSensorDataSum.y() / mBufferSize,mSensorDataSum.z() / mBufferSize);
+	// if(mIndexBuffer < mBufferSize) {
+		// mBuffer[mIndexBuffer++] = sensorData;
+		// mSensorDataSum += sensorData;
+	// } else {
+		// RTVector3 oldest = mBuffer[mIndexBuffer++ % mBufferSize];
+		// mSensorDataSum += sensorData;
+		// mSensorDataSum -= oldest;
+		// mBuffer[mIndexBuffer % mBufferSize] = sensorData;
+	// }
 	
-	return temp;
+	//RTVector3 temp(mSensorDataSum.x() / std::min(mBufferSize,mIndexBuffer),mSensorDataSum.y() / std::min(mBufferSize,mIndexBuffer), mSensorDataSum.z() / std::min(mBufferSize,mIndexBuffer));
+	// RTVector3 temp(mSensorDataSum.x(),mSensorDataSum.y(), mSensorDataSum.z());
+	
+	mSensorDataSum = 0.01 * sensorData + 0.99 * mSensorDataSum;
+	
+	return mSensorDataSum;
 }
 
 void filterz::setSize(int size) {

@@ -168,6 +168,7 @@ protected:
     bool m_accelCalibrationMode;                            // true if cal mode so don't use cal data!
 
 	filterz m_filter;
+	filterz m_filter2;
 	
     RTIMU_DATA m_imuData;                                   // the data from the IMU
 

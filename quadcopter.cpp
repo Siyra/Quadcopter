@@ -16,15 +16,16 @@ int main(int argc, char* argv[])
 	struct timespec t, current_t, last_t;
 	struct sched_param param;
 	//int interval =  2500000; // 2.5ms = 400 Hz
-	int interval = 5000000; // 5ms = 200 Hz
-	//int interval = 20000000; // 20ms = 50 Hz
-	//int interval = 50000000; // 50ms = 20 Hz
+	//int interval = 5000000; // 5ms = 200 Hz
+	int interval = 10000000; // 20ms = 100 Hz
+	// int interval = 20000000; // 20ms = 50 Hz
+	// int interval = 50000000; // 50ms = 20 Hz
 	float dt = (float)interval / 1000000000;
 	float cumTime = 0;
 	// Initial starting height
 	float h0 = 44000;
 	
-	bool started = false;
+	bool started = true;
 	bool first = true;
 	file = fopen("recordedData.dat","w");
 	// Declare this as a real time task
@@ -57,8 +58,7 @@ int main(int argc, char* argv[])
 
 	RTIMU *imu = RTIMU::createIMU(&imusettings);
 	RTPressure *pressure = RTPressure::createPressure(&imusettings);
-
-#ifndef TEST		
+		
 	// Check if the IMU is detected
 	if((imu == NULL) || (imu->IMUType() == RTIMU_TYPE_NULL)) {
 		printf("No IMU found, exiting..\n");
@@ -93,9 +93,6 @@ int main(int argc, char* argv[])
 		h0 = RTMath::convertPressureToHeight(imuData.pressure);
 		usleep(500000);
 	}
-#endif /* TEST */
-
-	//filter positionFilter(h0);
 	
 	//
 	// Initialize ESCs
@@ -107,8 +104,8 @@ int main(int argc, char* argv[])
 	
 	// Initialize sensor filters
 	filterz gyroFilter, attiFilter;
-	gyroFilter.setSize(4);
-	attiFilter.setSize(4);
+	gyroFilter.setSize(100);
+	attiFilter.setSize(40);
 	
 	//
 	// Initialize PS3 Controller
@@ -142,19 +139,18 @@ int main(int argc, char* argv[])
 
 	// The yaw is only controlled using the rate controller, pitch
 	// and roll are also controlled using the angle.
-	YPRStab[PITCH].setK(2.5,0.2,0.1);
-	YPRStab[ROLL].setK(2.5,0.2,0.1);
+	YPRStab[PITCH].setK(1.8,0,0.01);
+	YPRStab[ROLL].setK(1.8,0,0.01);
 
 	//YPRRate[YAW].setK(3,0.1,0.1);
-	YPRRate[PITCH].setK(16,0.8,1.1);
-	YPRRate[ROLL].setK(16,0.8,1.1);
-
-	//YPRStab[PITCH].setK(0,0,0);
-	//YPRStab[ROLL].setK(0,0,0);
-
-	YPRRate[YAW].setK(16,0,1.1);
-	//YPRRate[PITCH].setK(0,0,0);
-	//YPRRate[ROLL].setK(0,0,0);
+	// YPRRate[PITCH].setK(100,0,0.02);
+	// YPRRate[ROLL].setK(100,0,0.02);
+	YPRRate[PITCH].setK(8,0,1);
+	YPRRate[ROLL].setK(8,0,1);
+	// YPRRate[YAW].setK(14,0,0);
+	// YPRRate[PITCH].setK(30,0,0);
+	// YPRRate[ROLL].setK(30,0,0);
+	// YPRRate[YAW].setK(30,0,0);
 	
 	clock_gettime(CLOCK_MONOTONIC, &t);
 
@@ -169,7 +165,6 @@ int main(int argc, char* argv[])
 		// Wait until next shot
 		clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 
-#ifndef TEST	
 		// Read sensor data
 		imu->IMURead();
 		imuData = imu->getIMUData();
@@ -183,39 +178,25 @@ int main(int argc, char* argv[])
 		//               imuData.pressure, RTMath::convertPressureToHeight(imuData.pressure), imuData.temperature);
 
 		// This is the attitude angle of the UAV, so yaw, pitch and roll (in degrees)
-		//attitude[YAW] = imuData.fusionPose.z() - bias[YAW];
-		//attitude[PITCH] = imuData.fusionPose.y() - bias[PITCH];
-		//attitude[ROLL] = imuData.fusionPose.x() - bias[ROLL];
+		attitude[YAW] = imuData.fusionPose.z() - bias[YAW];
+		attitude[PITCH] = imuData.fusionPose.y() - bias[PITCH];
+		attitude[ROLL] = imuData.fusionPose.x() - bias[ROLL];
 
 		// These are the angular velocities of the UAV (in rad/s)
-		RTVector3 gyrotemp = gyroFilter.lowPass(imuData.gyro);
-		RTVector3 attitemp = attiFilter.lowPass(imuData.fusionPose);
+		RTVector3 gyrotemp = gyroFilter.lowPass(10*imuData.gyro);
+		//RTVector3 attitemp = attiFilter.lowPass(imuData.fusionPose);
 		
-		attitude[YAW] = attitemp.z() - bias[YAW];
-		attitude[PITCH] = attitemp.y() - bias[PITCH];
-		attitude[ROLL] = attitemp.x() - bias[ROLL];
+		//attitude[YAW] = attitemp.z();
+		//attitude[PITCH] = attitemp.y() - bias[PITCH];
+		//attitude[ROLL] = attitemp.x() - bias[ROLL];
 		
-		//gyro[YAW] = imuData.gyro.z();
-		//gyro[PITCH] = imuData.gyro.y();
-		//gyro[ROLL] =  imuData.gyro.x();
+		// gyro[YAW] = imuData.gyro.z();
+		// gyro[PITCH] = imuData.gyro.y();
+		// gyro[ROLL] =  imuData.gyro.x();
 		
 		gyro[YAW] = gyrotemp.z();
 		gyro[PITCH] = gyrotemp.y();
 		gyro[ROLL] =  gyrotemp.x();
-
-#else
-		// This is the attitude angle of the UAV, so yaw, pitch and roll
-		attitude[YAW] = 0;
-		attitude[PITCH] = 0;
-		attitude[ROLL] = 0;
-
-		// These are the angular velocities of the UAV
-		RTVector3 gyros(1,2,3);
-		RTVector3 gyrotemp = gyroFilter.lowPass(gyros);
-		gyro[YAW] = gyrotemp.z();
-		gyro[PITCH] = gyrotemp.y();
-		gyro[ROLL] = gyrotemp.x();
-#endif /* TEST */
 
 		// Here the joystick data is processed
 		JoystickEvent event;
@@ -223,12 +204,18 @@ int main(int argc, char* argv[])
 			if (event.isAxis() && event.number == 13) {
 				throttle = (event.value + 32767) / 100;
 				//printf("Set throttle to %g\n", throttle);
-			} else if (event.isAxis() && event.number == 3) {
-				setpoint[PITCH] = (float)event.value / 32767.0;
+			} 
+			if (event.isAxis() && event.number == 1) {
+				setpoint[PITCH] = (float)event.value / 50767.0;
 				//printf("Set pitch to %6.4f\n", setpoint[PITCH]);
-			} else if (event.isAxis() && event.number == 2) {
-				setpoint[ROLL] = (float)event.value / 32767.0;
+			} 
+			if (event.isAxis() && event.number == 0) {
+				setpoint[ROLL] = (float)event.value / 50767.0;
 				//printf("Set roll to %6.4f\n", setpoint[ROLL]);
+			}
+			if (event.isAxis() && event.number == 2) {
+				setpoint[YAW] = (float)event.value / 15767.0;
+				//printf("Set yaw to %6.4f\n", setpoint[YAW]);
 			}
 		}
 			
@@ -254,7 +241,7 @@ int main(int argc, char* argv[])
 			
 			// First the stability control for pitch and roll
 			for(int i=1; i<3; i++) {
-				PIDOutput1[i] = YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
+				PIDOutput1[i] = 0;//YPRStab[i].updatePID(setpoint[i], attitude[i], dt);
 			}
 			PIDOutput1[0] = setpoint[0];
 			
@@ -267,8 +254,9 @@ int main(int argc, char* argv[])
 			//printf("PIDOutput: %6.4f, %6.4f, %6.4f, %6.4f\n", throttle, PIDOutput[0], PIDOutput[1], PIDOutput[2]);
 			// Output to motors
 			motors.update(throttle, PIDOutput);
-			
-			fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f \n", cumTime, PIDOutput[0], PIDOutput[1], PIDOutput[2], attitude[0], attitude[1], attitude[2]);
+
+			//fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f \n", cumTime, imuData.accel.z(), imuData.accel.y(), imuData.accel.x(), gyro[0], gyro[1], gyro[2], PIDOutput[0], PIDOutput[1], PIDOutput[2]);
+			//fprintf(file, "%6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f \n", cumTime, PIDOutput[0], PIDOutput[1], PIDOutput[2], PIDOutput1[0], PIDOutput1[1], PIDOutput1[2], attitude[0], attitude[1], attitude[2],gyro[0], gyro[1], gyro[2]);
 			cumTime += dt;
 		}
 		
